@@ -66,19 +66,36 @@ void sr_init(struct sr_instance* sr)
  *
  *---------------------------------------------------------------------*/
 
-void sr_handlepacket(struct sr_instance* sr,
-        uint8_t * packet/* lent */,
-        unsigned int len,
-        char* interface/* lent */)
+void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, char* interface/* lent */)
 {
-  /* REQUIRES */
-  assert(sr);
-  assert(packet);
-  assert(interface);
+	/* REQUIRES */
+	assert(sr);
+	assert(packet);
+	assert(interface);
 
-  printf("*** -> Received packet of length %d \n",len);
+	printf("*** -> Received packet of length %d \n",len);
+	printf("*** -> From interface %c \n", interface);
+	print_hdrs(packet, (uint32_t) len);
 
-  /* fill in code here */
+	/////////////////////////////////
+	//Level 2
+	/////////////////////////////////
+
+	//Check minimum length and checksum
+	//Decrement TTL by one
+		//If TTL is 0, send ICMP Time exceeded message
+		//return
+
+	
+
+	/////////////////////////////////
+	//Level 3
+	/////////////////////////////////
+
+	/////////////////////////////////
+	//Level 2
+	/////////////////////////////////
+
 
 }/* end sr_ForwardPacket */
 
