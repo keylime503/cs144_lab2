@@ -74,7 +74,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	assert(interface);
 
 	printf("*** -> Received packet of length %d \n",len);
-	printf("*** -> From interface %c \n", interface);
+	printf("*** -> From interface %s \n", interface);
 	print_hdrs(packet, (uint32_t) len);
 
 	/* Extract ethernet header */
