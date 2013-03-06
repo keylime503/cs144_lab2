@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 #include <assert.h>
-
+#include <string.h>
 
 #include "sr_if.h"
 #include "sr_rt.h"
@@ -77,10 +77,24 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	printf("*** -> From interface %c \n", interface);
 	print_hdrs(packet, (uint32_t) len);
 
-	/*
-	level 2
+	/* Extract ethernet header */
+	sr_ethernet_hdr_t eth_hdr;
+	memcpy( (void *)packet, (void *) &eth_hdr, sizeof(sr_ethernet_hdr_t));
 	
+	/* Get recieving interface */
+	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
 
+	/* Check if frame is destined to us or a broadcast frame */
+	uint8_t bcast[8] = { 256, 256, 256, 256, 256, 256 }
+	if(memcmp( (void *)eth_hdr.ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 ||
+	   memcmp( (void *)eth_hdr.ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
+	{
+		//Drop the packet
+		printf("Dest MAC Address does not match interface");
+		return;
+	}
+
+	/*
 	//Check minimum length and checksum
 	//Decrement TTL by one
 		//If TTL is 0, send ICMP Time exceeded message
