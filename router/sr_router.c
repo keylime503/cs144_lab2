@@ -77,9 +77,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	printf("*** -> From interface %c \n", interface);
 	print_hdrs(packet, (uint32_t) len);
 
-	/////////////////////////////////
-	//Level 2
-	/////////////////////////////////
+	/*
+	level 2
+	
 
 	//Check minimum length and checksum
 	//Decrement TTL by one
@@ -95,6 +95,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	/////////////////////////////////
 	//Level 2
 	/////////////////////////////////
+	*/
 
 
 }/* end sr_ForwardPacket */
