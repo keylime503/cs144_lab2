@@ -94,10 +94,12 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	/* Get recieving interface */
 	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
 
+	/* bcast array is FF:FF:FF:FF:FF:FF */
+	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
+	
 	/* Check if frame is destined to us or a broadcast frame
 	   If not, drop packet
 	 */
-	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
 	if(memcmp( (void *) eth_hdr->ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 &&
 	   memcmp( (void *) eth_hdr->ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
 	{
@@ -152,15 +154,15 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Check Destination IP */
-   		uint32_t destIP = iphdr->ip_dst;
+		uint32_t destIP = iphdr->ip_dst;
 
-      	struct sr_if* if_walker = sr->if_list;
+		struct sr_if* if_walker = sr->if_list;
 
-      	/* Destined to router */
-    	while(if_walker)
-    	{
-    		if(if_walker->ip == destIP)
-    		{
+		/* Destined to router */
+		while(if_walker)
+		{
+			if(if_walker->ip == destIP)
+			{
     			/* What is the protocol field in IP header? */
 				uint16_t ip_protocol = ip_protocol(iphdr);
 				if (ip_protocol == ip_protocol_icmp)
@@ -171,12 +173,12 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					// ICMP port unreachable
 				}
-    			
-    			return;
-    		}
-       		
-       		if_walker = if_walker->next;
-   		}
+
+				return;
+			}
+
+			if_walker = if_walker->next;
+		}
 
 		/* Destined to others */
 			/* Lookup Routing Table */
@@ -204,14 +206,29 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       		uint32_t targetIP = arphdr->ar_tip;
 
       		struct sr_if* if_walker = sr->if_list;
-
     		while(if_walker)
     		{
     			if(if_walker->ip == targetIP)
     			{
-    				/* Send a reply packet */
+    				/* Build a reply packet */
+    				
+    				/* Set ARP opcode to Reply */
     				arphdr->ar_op = htons(2);
     				
+    				/* Set target MAC Address and ip to the source address and ip */
+    				memcpy(arphdr->ar_sha, arphdr->ar_tha, ETHER_ADDR_LEN);
+    				arphdr->ar_tip = arphdr->ar_sip;
+
+    				/* Set source MAC Address and ip to the interface */
+    				memcpy(if_walker->addr, arphdr->sha, ETHER_ADDR_LEN);
+    				arphdr->ar_sip = if_walker->ip;
+
+    				/* Set Ethernet Header */
+    				memcpy(arphdr->ar_sha, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
+    				memcpy(if_walker->addr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
+
+    				/* Send a reply packet */
+    				sr_send_packet(sr, buf, len, if_walker->name);
     				return;
     			}
 
@@ -226,7 +243,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       	/* ARP reply */
       	else if(ntohs(arphdr->ar_op) == 2)
       	{
-
+      		
       	}
       	
       	else
