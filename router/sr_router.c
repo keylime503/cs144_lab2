@@ -226,6 +226,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				memcpy(arphdr->ar_sha, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
     				memcpy(if_walker->addr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 
+    				/* DEBUG: Print reply packet */
+    				print_hdrs(packet, (uint32_t) len);
+
     				/* Send a reply packet */
     				sr_send_packet(sr, packet, len, if_walker->name);
     				return;
