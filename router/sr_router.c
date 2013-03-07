@@ -152,33 +152,35 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Check Destination IP */
-		uint32_t ip_dst = iphdr->ip_dst;
+   		uint32_t destIP = iphdr->ip_dst;
 
-		/* Destined to router */
-		if (ip_dst == 192.168.2.1 || ip_dst == 172.64.3.1 || ip_dst == 10.0.1.1) // TODO: what format is ip_dst in?
-		{
-			/* What is the protocol field in IP header? */
-			uint16_t ip_protocol = ip_protocol(buf);
-			if (ip_protocol == ip_protocol_icmp)
-			{
-				// TODO: ICMP processing
-			}
-			else
-			{
-				// ICMP port unreachable
-			}
-		}
+      	struct sr_if* if_walker = sr->if_list;
+
+      	/* Destined to router */
+    	while(if_walker)
+    	{
+    		if(if_walker->ip == destIP)
+    		{
+    			/* What is the protocol field in IP header? */
+				uint16_t ip_protocol = ip_protocol(iphdr);
+				if (ip_protocol == ip_protocol_icmp)
+				{
+					// TODO: ICMP processing
+				}
+				else
+				{
+					// ICMP port unreachable
+				}
+    			
+    			return;
+    		}
+       		
+       		if_walker = if_walker->next;
+   		}
 
 		/* Destined to others */
-		else
-		{
 			/* Lookup Routing Table */
-
 			// Routing entry not found -> ICMP network unreachable
-		}
-
-
-
 	}
 	
 	/* ARP Packet */
