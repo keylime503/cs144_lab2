@@ -77,13 +77,26 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	printf("*** -> From interface %s \n", interface);
 	print_hdrs(packet, (uint32_t) len);
 
+	/*---------------------------------------------------------------------
+	 * Layer 2
+	 *---------------------------------------------------------------------*/
+
+	/* Check that the packet is long enough for an ethernet header */
+	int minlength = sizeof(sr_ethernet_hdr_t);
+	if (len < minlength) {
+    	printf("Failed to extract ETHERNET header, insufficient length\n");
+    	return;
+	}
+
 	/* Extract ethernet header */
 	sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr_t *) packet;
 	
 	/* Get recieving interface */
 	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
 
-	/* Check if frame is destined to us or a broadcast frame */
+	/* Check if frame is destined to us or a broadcast frame
+	   If not, drop packet
+	 */
 	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
 	if(memcmp( (void *) eth_hdr->ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 &&
 	   memcmp( (void *) eth_hdr->ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
@@ -95,23 +108,112 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		return;
 	}
 
-	/*
-	//Check minimum length and checksum
-	//Decrement TTL by one
-		//If TTL is 0, send ICMP Time exceeded message
-		//return
-
+	/*---------------------------------------------------------------------
+	 * Layer 3
+	 *---------------------------------------------------------------------*/	
 	
+	/* Find type of Layer 3 packet */
+	uint16_t ethtype = ethertype(buf);
 
-	/////////////////////////////////
-	//Level 3
-	/////////////////////////////////
+	/* IP packet*/
+	if (ethtype == ethertype_ip) 
+	{ 
+		/* Check that the packet is long enough for an IP header */
+		minlength += sizeof(sr_ip_hdr_t);
+		if (len < minlength) 
+		{
+			printf("Failed to extract IP header, insufficient length\n");
+			return;
+		}
 
-	/////////////////////////////////
-	//Level 2
-	/////////////////////////////////
-	*/
+		/* Extract the IP header */
+		sr_ip_hdr_t * iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+		
+		/* checksum */
+		uint16_t computedCksum = cksum((void *) iphdr, sizeof(sr_ip_hdr_t));
+		if(computedCksum != iphdr->ip_sum)
+		{
+			printf("IP Header has wrong checksum.\n");
+			printf("Computed: %d\n", computedCksum);
+		}
+
+		/* Decrement TTL */
+		iphdr->ip_ttl--;
+
+		/* If TTL is 0, drop packet and send ICMP Time Exceded */
+		if(iphdr->ip_ttl == 0)
+		{
+			/* TODO: Send ICMP Message */
+			return;
+		}
+
+		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
+		iphdr->cksum = 0;
+		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 
+
+	}
+	
+	/* ARP Packet */
+	else if (ethtype == ethertype_arp) 
+	{ 
+    	minlength += sizeof(sr_arp_hdr_t);
+    	if (len < minlength)
+      	{
+      		printf("Failed to extract ARP header, insufficient length\n");
+      		return;
+      	}
+
+      	/* Extract ARP Header */
+      	sr_arp_hdr * arphdr = (sr_arp_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
+
+      	/* Check if ARP request or reply */
+      	/* ARP request */
+      	if(ntohs(arphdr->ar_op) == 1)
+      	{
+      		/* Check if it is requesting one of our IP Addresses */
+      		uint32_t targetIP = arphdr->ar_tip;
+
+      		struct sr_if* if_walker = sr->if_list;
+
+    		while(if_walker)
+    		{
+    			if(if_walker->ip == targetIP)
+    			{
+    				/* Send a reply packet */
+    				arphdr->ar_op = htons(2);
+    				
+    				return;
+    			}
+
+       			if_walker = if_walker->next;
+    		}
+
+    		/* Not one of our IP Addresses, drop packet */
+    		if(if_walker == NULL)
+    			return;
+      	}
+
+      	/* ARP reply */
+      	else if(ntohs(arphdr->ar_op) == 2)
+      	{
+
+      	}
+      	
+      	else
+      	{
+      		printf("Unrecognized ARP Opcode\n");
+      		return;
+      	}
+  	}
+  	
+  	else 
+  	{
+    	printf("Unrecognized Ethernet Type: %d\n", ethtype);
+    	return;
+  	}
+
+  	
 }/* end sr_ForwardPacket */
 
