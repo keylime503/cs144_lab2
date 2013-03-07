@@ -78,7 +78,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	print_hdrs(packet, (uint32_t) len);
 
 	/* Extract ethernet header */
-	sr_ethernet_hdr_t eth_hdr * = (sr_ethernet_hdr_t *) packet;
+	sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr_t *) packet;
 	
 	/* Get recieving interface */
 	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
@@ -91,7 +91,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Drop the packet */
 		printf("Dest MAC Address does not match interface \n");
 		printf("MAC Address Interface:");
-		print_addr_eth((uint8_t *) recievingInterface->addr));
+		print_addr_eth( (uint8_t *) recievingInterface->addr);
 		return;
 	}
 
