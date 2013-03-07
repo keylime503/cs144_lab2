@@ -215,16 +215,16 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				arphdr->ar_op = htons(2);
     				
     				/* Set target MAC Address and ip to the source address and ip */
-    				memcpy(arphdr->ar_sha, arphdr->ar_tha, ETHER_ADDR_LEN);
+    				memcpy(arphdr->ar_tha, arphdr->ar_sha, ETHER_ADDR_LEN);
     				arphdr->ar_tip = arphdr->ar_sip;
 
     				/* Set source MAC Address and ip to the interface */
-    				memcpy(if_walker->addr, arphdr->ar_sha, ETHER_ADDR_LEN);
+    				memcpy(arphdr->ar_sha, if_walker->addr, ETHER_ADDR_LEN);
     				arphdr->ar_sip = if_walker->ip;
 
     				/* Set Ethernet Header */
-    				memcpy(arphdr->ar_sha, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
-    				memcpy(if_walker->addr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
+    				memcpy(eth_hdr->ether_dhost, arphdr->ar_sha, ETHER_ADDR_LEN);
+    				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
 
     				/* DEBUG: Print reply packet */
     				print_hdrs(packet, (uint32_t) len);
