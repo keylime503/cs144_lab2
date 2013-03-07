@@ -78,19 +78,20 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	print_hdrs(packet, (uint32_t) len);
 
 	/* Extract ethernet header */
-	sr_ethernet_hdr_t eth_hdr;
-	memcpy( (void *)packet, (void *) &eth_hdr, sizeof(sr_ethernet_hdr_t));
+	sr_ethernet_hdr_t eth_hdr * = (sr_ethernet_hdr_t *) packet;
 	
 	/* Get recieving interface */
 	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
 
 	/* Check if frame is destined to us or a broadcast frame */
 	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
-	if(memcmp( (void *)eth_hdr.ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 ||
+	if(memcmp( (void *)eth_hdr.ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 &&
 	   memcmp( (void *)eth_hdr.ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
 	{
 		/* Drop the packet */
-		printf("Dest MAC Address does not match interface");
+		printf("Dest MAC Address does not match interface \n");
+		printf("MAC Address Interface:");
+		print_addr_eth((uint8_t *) recievingInterface->addr));
 		return;
 	}
 
