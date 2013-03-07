@@ -223,7 +223,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				arphdr->ar_sip = if_walker->ip;
 
     				/* Set Ethernet Header */
-    				memcpy(eth_hdr->ether_dhost, arphdr->ar_sha, ETHER_ADDR_LEN);
+    				memcpy(eth_hdr->ether_dhost, arphdr->ar_tha, ETHER_ADDR_LEN);
     				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
 
     				/* DEBUG: Print reply packet */
