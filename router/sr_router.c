@@ -115,7 +115,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	 *---------------------------------------------------------------------*/	
 	
 	/* Find type of Layer 3 packet */
-	uint16_t ethtype = ethertype(buf);
+	uint16_t ethtype = ethertype(packet);
 
 	/* IP packet*/
 	if (ethtype == ethertype_ip) 
@@ -163,7 +163,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			if(if_walker->ip == destIP)
 			{
     			/* What is the protocol field in IP header? */
-				if (ip_protocol(iphdr) == ip_protocol_icmp)
+				if (ip_protocol((uint8_t *) iphdr) == ip_protocol_icmp)
 				{
 					/* TODO: ICMP processing */
 				}
@@ -218,7 +218,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				arphdr->ar_tip = arphdr->ar_sip;
 
     				/* Set source MAC Address and ip to the interface */
-    				memcpy(if_walker->addr, arphdr->sha, ETHER_ADDR_LEN);
+    				memcpy(if_walker->addr, arphdr->ar_sha, ETHER_ADDR_LEN);
     				arphdr->ar_sip = if_walker->ip;
 
     				/* Set Ethernet Header */
@@ -226,7 +226,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				memcpy(if_walker->addr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 
     				/* Send a reply packet */
-    				sr_send_packet(sr, buf, len, if_walker->name);
+    				sr_send_packet(sr, packet, len, if_walker->name);
     				return;
     			}
 
