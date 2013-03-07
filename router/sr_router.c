@@ -85,7 +85,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	struct sr_if * recievingInterface = sr_get_interface(sr, interface);
 
 	/* Check if frame is destined to us or a broadcast frame */
-	uint8_t bcast[8] = { 256, 256, 256, 256, 256, 256 }
+	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
 	if(memcmp( (void *)eth_hdr.ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 ||
 	   memcmp( (void *)eth_hdr.ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
 	{
