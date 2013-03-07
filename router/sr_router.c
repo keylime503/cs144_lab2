@@ -131,9 +131,11 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Extract the IP header */
 		sr_ip_hdr_t * iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 		
-		/* checksum */
+		/* Save checksum */
+		uint16_t ipCksum = iphdr->ip_sum;
+		iphdr->ip_sum = 0;
 		uint16_t computedCksum = cksum((void *) iphdr, sizeof(sr_ip_hdr_t));
-		if(computedCksum != iphdr->ip_sum)
+		if(computedCksum != ipCksum)
 		{
 			printf("IP Header has wrong checksum.\n");
 			printf("Computed: %d\n", computedCksum);
@@ -150,7 +152,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
-		iphdr->ip_sum = 0;
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Check Destination IP */
