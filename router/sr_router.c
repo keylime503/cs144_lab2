@@ -148,8 +148,34 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
-		iphdr->cksum = 0;
+		iphdr->cksum = 0; // ???
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
+
+		/* Check Destination IP */
+		uint32_t ip_dst = iphdr->ip_dst;
+
+		/* Destined to router */
+		if (ip_dst == 192.168.2.1 || ip_dst == 172.64.3.1 || ip_dst == 10.0.1.1) // TODO: what format is ip_dst in?
+		{
+			/* What is the protocol field in IP header? */
+			uint16_t ip_protocol = ip_protocol(buf);
+			if (ip_protocol == ip_protocol_icmp)
+			{
+				// TODO: ICMP processing
+			}
+			else
+			{
+				// ICMP port unreachable
+			}
+		}
+
+		/* Destined to others */
+		else
+		{
+			/* Lookup Routing Table */
+
+			// Routing entry not found -> ICMP network unreachable
+		}
 
 
 
