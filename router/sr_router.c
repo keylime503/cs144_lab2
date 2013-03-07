@@ -150,12 +150,11 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
-		iphdr->cksum = 0; // ???
+		iphdr->ip_sum = 0;
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Check Destination IP */
 		uint32_t destIP = iphdr->ip_dst;
-
 		struct sr_if* if_walker = sr->if_list;
 
 		/* Destined to router */
@@ -164,14 +163,13 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			if(if_walker->ip == destIP)
 			{
     			/* What is the protocol field in IP header? */
-				uint16_t ip_protocol = ip_protocol(iphdr);
-				if (ip_protocol == ip_protocol_icmp)
+				if (ip_protocol(iphdr) == ip_protocol_icmp)
 				{
-					// TODO: ICMP processing
+					/* TODO: ICMP processing */
 				}
 				else
 				{
-					// ICMP port unreachable
+					/* ICMP port unreachable */
 				}
 
 				return;
@@ -182,7 +180,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Destined to others */
 			/* Lookup Routing Table */
-			// Routing entry not found -> ICMP network unreachable
+			/* Routing entry not found -> ICMP network unreachable */
 	}
 	
 	/* ARP Packet */
@@ -196,7 +194,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       	}
 
       	/* Extract ARP Header */
-      	sr_arp_hdr * arphdr = (sr_arp_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
+      	sr_arp_hdr_t * arphdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
       	/* Check if ARP request or reply */
       	/* ARP request */
@@ -243,7 +241,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       	/* ARP reply */
       	else if(ntohs(arphdr->ar_op) == 2)
       	{
-      		
+
       	}
       	
       	else
