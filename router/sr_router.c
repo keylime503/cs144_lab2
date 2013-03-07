@@ -85,8 +85,8 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 	/* Check if frame is destined to us or a broadcast frame */
 	uint8_t bcast[8] = { 255, 255, 255, 255, 255, 255 };
-	if(memcmp( (void *)eth_hdr.ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 &&
-	   memcmp( (void *)eth_hdr.ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
+	if(memcmp( (void *) eth_hdr->ether_dhost, (void *) recievingInterface->addr, ETHER_ADDR_LEN) != 0 &&
+	   memcmp( (void *) eth_hdr->ether_dhost, (void *) bcast, ETHER_ADDR_LEN) != 0)
 	{
 		/* Drop the packet */
 		printf("Dest MAC Address does not match interface \n");
