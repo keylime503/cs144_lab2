@@ -50,6 +50,26 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+/* Method to send packets (with space for ethernet header) to an interface. */
+void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, 
+					char* interface/* lent */, void * src, void * dest, uint16_t type)
+{
+	sr_ethernet_hdr_t * eth_hdr = packet;
+
+	/* Modify Ethernet header */
+	memcpy(eth_hdr->ether_dhost, dest, ETHER_ADDR_LEN);
+	memcpy(eth_hdr->ether_shost, src, ETHER_ADDR_LEN);
+	eth_hdr->ether_type = htons(type);
+
+	/* DEBUG: Print reply packet */
+	print_hdrs(packet, (uint32_t) len);
+
+	/* Send a reply packet */
+	sr_send_packet(sr, packet, len, interface);
+	return;
+}
+
+
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -171,12 +191,15 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					/* Build a reply ICMP type 0 packet */
 					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 					
+					/* Echo Request */
 					if (ntohs(icmphdr->icmp_type) == 8)
 					{
-						/* Echo request, so echo reply */
+						/* Set to echo reply */
 						icmphdr->icmp_type = htons(0);
 						icmphdr->icmp_code = htons(0);
 					}
+
+					/* Any other ICMP Message*/
 					else
 					{
 						/* FOR NOW!!! Drop packet */
@@ -186,11 +209,11 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					icmphdr->icmp_sum = cksum((void *) icmphdr, sizeof(sr_icmp_t3_hdr_t));
 				}
 		
+				/* UDP, TCP -> ICMP port unreachable */
 				else
 				{
-					/* UDP, TCP -> ICMP port unreachable */
-
 					/* Build a reply ICMP type 3 packet */
+					/* TODO: Figure out length of packet, UDP/TCP Packet will not be correct size */
 					sr_icmp_t3_hdr_t * icmp3hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 					icmp3hdr->icmp_type = htons(3);
 					icmp3hdr->icmp_code = htons(3);
@@ -203,16 +226,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				iphdr->ip_src = if_walker->ip;
 				iphdr->ip_sum = cksum((void *) iphdr, sizeof(sr_ip_hdr_t));
 
-				/* Modify Ethernet header */
-				memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
-				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
-
-				/* DEBUG: Print reply packet */
-				print_hdrs(packet, (uint32_t) len);
-
-				/* Send a reply packet */
-				sr_send_packet(sr, packet, len, if_walker->name);
-
+				send_layer_2(sr, packet, len, if_walker->name, if_walker->addr, eth_hdr->ether_shost, ethertype_ip);
 				return;
 			}
 
@@ -227,11 +241,35 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
 				printf("Routing Table match\n");
+
+				/* Get gateway IP (next hop) */
+				uint32_t gateIP = rtIter->gw.s_addr;
+
+				/* Get dest MAC Address from ARP Cache */
+				struct sr_arpentry * entry = sr_arpcache_lookup(sr->cache, gateIP);
+				
+				/* Get source MAC Address from outgoing interface */
+				struct sr_if * outgoingIFace = sr_get_interface(sr, rtIter->interface);
+
+				/* ARP Cache Hit */
+				if(entry)
+				{
+					/* Send to Layer 2 */
+					send_layer_2(sr, packet, len, outgoingIFace->name,outgoingIFace->addr, entry->mac, ethertype_ip);
+					free(entry);
+					return
+				}
+
+				/* ARP Cache Miss */
+				
+
+
 			}
-			return;
-			
+			rtIter = rtIter->next;
 		}
+
 		/* Routing entry not found -> ICMP network unreachable */
+		printf("Routing entry not found\n");
 		return;
 	}
 	
@@ -260,7 +298,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     		{
     			if(if_walker->ip == targetIP)
     			{
-    				/* Build a reply packet */
+    				/* Build an ARP reply packet */
     				
     				/* Set ARP opcode to Reply */
     				arphdr->ar_op = htons(2);
@@ -277,11 +315,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				memcpy(eth_hdr->ether_dhost, arphdr->ar_tha, ETHER_ADDR_LEN);
     				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
 
-    				/* DEBUG: Print reply packet */
-    				print_hdrs(packet, (uint32_t) len);
-
-    				/* Send a reply packet */
+    				
     				sr_send_packet(sr, packet, len, if_walker->name);
+    				send_layer_2(sr, packet, len, if_walker->name, if_walker->addr, arphdr->ar_tha, ethertype_arp);
     				return;
     			}
 
