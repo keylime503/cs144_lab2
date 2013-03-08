@@ -84,6 +84,33 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	return;
 }
 
+/* Method to send ARP packet (fills ARP header, sends to send_later_2) to an interface. */
+void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_src, void * ether_dest, 
+    					uint32_t ip_src, uint32_t ip_dst, unsigned short ar_op)
+{	
+	/* Create packet to hold ethernet header and arp header */
+	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+	uint8_t * packet = (uint8_t) malloc ((size_t) len);
+
+	sr_arp_hdr_t * arp_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+	/* Fill out ARP header */
+	arp_hdr->ar_hrd = arp_hrd_ethernet;
+	arp_hdr->ar_pro = 0x0800;
+	arp_hdr->ar_hln = ETHER_ADDR_LEN;
+	arp_hdr->ar_pln = 4;
+	arp_hdr->ar_op = htons(ar_op);
+	arp_hdr->ar_sip = ip_src;
+	arp_hdr->ar_tip = ip_dst;
+	memcpy(arp_hdr->ar_sha, ether_src, ETHER_ADDR_LEN);
+	memcpy(arp_hdr->ar_tha, ether_dst, ETHER_ADDR_LEN);
+
+	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
+	send_layer_2(sr, packet, len, interface, ether_src, ether_dst, ethertype_arp);
+
+	return;
+}
+
 /* Method to send packets (with space for ethernet header) to an interface. */
 void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, 
 					char* interface/* lent */, void * src, void * dest, uint16_t type)
@@ -285,14 +312,31 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				if(entry)
 				{
 					/* Send to Layer 2 */
-					send_layer_2(sr, packet, len, outgoingIFace->name,outgoingIFace->addr, entry->mac, ethertype_ip);
+					send_layer_2(sr, packet, len, outgoingIFace->name, outgoingIFace->addr, entry->mac, ethertype_ip);
 					free(entry);
 					return
 				}
-
 				/* ARP Cache Miss */
-				
+				else
+				{
+					// TODO: Following two lines were taken from sr_arpcache.h, fix them
+					req = arpcache_queuereq(next_hop_ip, packet, len);
+       				handle_arpreq(req);
+				}
 
+				/* Send ARP Request on each interface */
+				/*if_walker = = sr->if_list;
+				while(if_walker)
+				{
+					send_arp_packet(sr, if_walker->name, if_walker->addr, bcast, 
+    					if_walker->ip, iphdr->ip_dst, arp_op_request);
+
+					if_walker = if_walker->next;
+				}*/
+
+				// TODO: Send every second? And wait for reply?
+				
+				return ???
 
 			}
 			rtIter = rtIter->next;
@@ -300,6 +344,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Routing entry not found -> ICMP network unreachable */
 		printf("Routing entry not found\n");
+		send_icmp_packet(sr, if_walker->name, recievingInterface->addr, eth_hdr->ether_shost, 
+    								ip_hdr->ip_dst, ip_hdr->ip_src, 3, 0);
+
 		return;
 	}
 	
@@ -328,26 +375,10 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     		{
     			if(if_walker->ip == targetIP)
     			{
-    				/* Build an ARP reply packet */
+    				/* Send ARP reply */
+    				send_arp_packet(sr, if_walker->name, if_walker->addr, arphdr->ar_sha, if_walker->ip,
+    									arphdr->ar_sip, arp_op_reply);
     				
-    				/* Set ARP opcode to Reply */
-    				arphdr->ar_op = htons(2);
-    				
-    				/* Set target MAC Address and ip to the source address and ip */
-    				memcpy(arphdr->ar_tha, arphdr->ar_sha, ETHER_ADDR_LEN);
-    				arphdr->ar_tip = arphdr->ar_sip;
-
-    				/* Set source MAC Address and ip to the interface */
-    				memcpy(arphdr->ar_sha, if_walker->addr, ETHER_ADDR_LEN);
-    				arphdr->ar_sip = if_walker->ip;
-
-    				/* Set Ethernet Header */
-    				memcpy(eth_hdr->ether_dhost, arphdr->ar_tha, ETHER_ADDR_LEN);
-    				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
-
-    				
-    				sr_send_packet(sr, packet, len, if_walker->name); // TODO: ??? double send?
-    				send_layer_2(sr, packet, len, if_walker->name, if_walker->addr, arphdr->ar_tha, ethertype_arp);
     				return;
     			}
 
