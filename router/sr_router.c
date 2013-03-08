@@ -139,6 +139,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		{
 			printf("IP Header has wrong checksum.\n");
 			printf("Computed: %d\n", computedCksum);
+			return;
 		}
 
 		/* Decrement TTL */
@@ -180,8 +181,18 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Destined to others */
-			/* Lookup Routing Table */
-			/* Routing entry not found -> ICMP network unreachable */
+		/* Lookup Routing Table */
+		sr_rt * rtIter = sr->routing_table;
+		while(rtIter)
+		{
+			if(rtIter->dest == destIP)
+			{
+				
+			}
+			
+		}
+		/* Routing entry not found -> ICMP network unreachable */
+		return;
 	}
 	
 	/* ARP Packet */
