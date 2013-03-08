@@ -152,7 +152,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			return;
 		}
 
-		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
+		/* Recompute Cksum */
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Destined to router */
@@ -166,7 +166,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					/* ICMP processing */
 
-					// TODO: for now, we only handle echo request -> echo reply
+					/* TODO: for now, we only handle echo request -> echo reply */
 
 					/* Build a reply ICMP type 0 packet */
 					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
@@ -221,13 +221,14 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Destined to others */
 		/* Lookup Routing Table */
-		sr_rt * rtIter = sr->routing_table;
+		struct sr_rt * rtIter = sr->routing_table;
 		while(rtIter)
 		{
-			if(rtIter->dest == destIP)
+			if(rtIter->dest == iphdr->ip_dst)
 			{
 				
 			}
+			return;
 			
 		}
 		/* Routing entry not found -> ICMP network unreachable */
