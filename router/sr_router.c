@@ -224,9 +224,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		struct sr_rt * rtIter = sr->routing_table;
 		while(rtIter)
 		{
-			if(rtIter->dest == iphdr->ip_dst)
+			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
-				
+				printf("Routing Table match\n");
 			}
 			return;
 			
