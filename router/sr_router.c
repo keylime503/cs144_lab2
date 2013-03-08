@@ -71,6 +71,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 
 	/* Fill out IP header */
 	// TODO: What do we do with all the other ip_hdr fields, including ttl??
+	ip_hdr->ip_ttl = 64; // default
 	ip_hdr->ip_p = ip_protocol_icmp;
 	ip_hdr->ip_src = ip_src;
 	ip_hdr->ip_dst = ip_dst;
@@ -345,7 +346,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
 
     				
-    				sr_send_packet(sr, packet, len, if_walker->name);
+    				sr_send_packet(sr, packet, len, if_walker->name); // TODO: ??? double send?
     				send_layer_2(sr, packet, len, if_walker->name, if_walker->addr, arphdr->ar_tha, ethertype_arp);
     				return;
     			}
