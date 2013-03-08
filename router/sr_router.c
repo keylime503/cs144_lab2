@@ -154,24 +154,63 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Recompute Cksum TODO: Make sure cksum is computed correctly*/
 		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
-		/* Check Destination IP */
-		uint32_t destIP = iphdr->ip_dst;
-		struct sr_if* if_walker = sr->if_list;
-
 		/* Destined to router */
+		struct sr_if* if_walker = sr->if_list;
 		while(if_walker)
 		{
-			if(if_walker->ip == destIP)
+			if(if_walker->ip == iphdr->ip_dst)
 			{
     			/* What is the protocol field in IP header? */
 				if (ip_protocol((uint8_t *) iphdr) == ip_protocol_icmp)
 				{
-					/* TODO: ICMP processing */
+					/* ICMP processing */
+
+					// TODO: for now, we only handle echo request -> echo reply
+
+					/* Build a reply ICMP type 0 packet */
+					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+					
+					if (ntohs(icmphdr->icmp_type) == 8)
+					{
+						/* Echo request, so echo reply */
+						icmphdr->icmp_type = htons(0);
+						icmphdr->icmp_code = htons(0);
+					}
+					else
+					{
+						/* FOR NOW!!! Drop packet */
+						return;
+					}
+					
+					icmphdr->icmp_sum = cksum((void *) icmphdr, sizeof(sr_icmp_t3_hdr_t));
 				}
+		
 				else
 				{
-					/* ICMP port unreachable */
+					/* UDP, TCP -> ICMP port unreachable */
+
+					/* Build a reply ICMP type 3 packet */
+					sr_icmp_t3_hdr_t * icmp3hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+					icmp3hdr->icmp_type = htons(3);
+					icmp3hdr->icmp_code = htons(3);
+					icmp3hdr->icmp_sum = cksum((void *) icmp3hdr, sizeof(sr_icmp_t3_hdr_t));
 				}
+
+				/* Modify IP header */
+				iphdr->ip_p = ip_protocol_icmp;
+				iphdr->ip_dst = iphdr->ip_src;
+				iphdr->ip_src = if_walker->ip;
+				iphdr->ip_sum = cksum((void *) iphdr, sizeof(sr_ip_hdr_t));
+
+				/* Modify Ethernet header */
+				memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
+				memcpy(eth_hdr->ether_shost, if_walker->addr, ETHER_ADDR_LEN);
+
+				/* DEBUG: Print reply packet */
+				print_hdrs(packet, (uint32_t) len);
+
+				/* Send a reply packet */
+				sr_send_packet(sr, packet, len, if_walker->name);
 
 				return;
 			}
