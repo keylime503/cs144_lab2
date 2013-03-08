@@ -60,8 +60,11 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
 	uint8_t * packet = (uint8_t) malloc ((size_t) len);
 
-	sr_ip_hdr_t * ip_hdr = packet + sizeof(sr_ethernet_hdr_t);
-	sr_icmp_hdr_t * icmp_hdr = ip_hdr + sizeof(sr_icmp_hdr_t);
+
+	sr_ip_hdr_t * iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(ip_hdr + sizeof(sr_icmp_hdr_t));
 
 	/* Fill out ICMP header */
 	icmp_hdr->icmp_type = icmp_type;
@@ -69,9 +72,13 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	icmp_hdr->icmp_sum = 0;
 	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
 
-
-
 	/* Fill out IP header */
+	// TODO: What do we do with all the other ip_hdr fields, including ttl??
+	ip_hdr->ip_p = ip_protocol_icmp;
+	ip_hdr->ip_src = ip_src;
+	ip_hdr->ip_dst = ip_dst;
+	ip_hdr->ip_sum = 0;
+	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
 	send_layer_2(sr, packet, len, interface, ether_src, ether_dst, ethertype_ip);
