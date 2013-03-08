@@ -50,6 +50,35 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+/* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_src, void * ether_dest, 
+    					uint32_t ip_src, uint32_t ip_dst, uint8_t icmp_type, uint8_t icmp_code)
+{
+	// TODO: Handle sr_icmp_t3_hdr as well
+
+	/* Create packet to hold ethernet header, ip header, and icmp header */
+	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
+	uint8_t * packet = (uint8_t) malloc ((size_t) len);
+
+	sr_ip_hdr_t * ip_hdr = packet + sizeof(sr_ethernet_hdr_t);
+	sr_icmp_hdr_t * icmp_hdr = ip_hdr + sizeof(sr_icmp_hdr_t);
+
+	/* Fill out ICMP header */
+	icmp_hdr->icmp_type = icmp_type;
+	icmp_hdr->icmp_code = icmp_code;
+	icmp_hdr->icmp_sum = 0;
+	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
+
+
+
+	/* Fill out IP header */
+
+	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
+	send_layer_2(sr, packet, len, interface, ether_src, ether_dst, ethertype_ip);
+
+	return;
+}
+
 /* Method to send packets (with space for ethernet header) to an interface. */
 void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, 
 					char* interface/* lent */, void * src, void * dest, uint16_t type)
