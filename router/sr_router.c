@@ -393,7 +393,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       		/* matching_req now points to the sr_arpreq entry we need to add to cache 
       		   Send all packets waiting on this ARP Request*/
       		struct sr_packet * pkt;
-      		for(pkt = matching_req->packets, pkt != NULL, pkt = pkt->next)
+      		for(pkt = matching_req->packets; pkt != NULL; pkt = pkt->next)
       		{
       			send_layer_2(sr, pkt->buf, pkt->len, pkt->iface, arphdr->ar_sha, ethertype_ip);
       		}
