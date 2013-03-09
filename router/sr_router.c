@@ -92,12 +92,12 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 {	
 	/* Create packet to hold ethernet header and arp header */
 	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-	uint8_t * packet = (uint8_t) malloc ((size_t) len);
+	uint8_t * packet = (uint8_t *) malloc ((size_t) len);
 
 	sr_arp_hdr_t * arp_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
 	/* Get sr_if for srcMAC address */
-	sr_if * outgoingIFace = sr_get_interface(sr, interface);
+	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out ARP header */
 	arp_hdr->ar_hrd = arp_hrd_ethernet;
@@ -121,10 +121,10 @@ void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned i
 					char* interface/* lent */, void * destMAC, uint16_t type)
 {
 	/* Get sr_if for srcMAC address */
-	sr_if * outgoingIFace = sr_get_interface(sr, interface);
+	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 	
 	/* Modify Ethernet header */
-	sr_ethernet_hdr_t * eth_hdr = packet;
+	sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr_t *) packet;
 	memcpy(eth_hdr->ether_dhost, destMAC, ETHER_ADDR_LEN);
 	memcpy(eth_hdr->ether_shost, outgoingIFace->addr, ETHER_ADDR_LEN);
 	eth_hdr->ether_type = htons(type);
@@ -237,7 +237,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		if(iphdr->ip_ttl <= 0)
 		{
 			/* Send ICMP Message */
-			send_icmp_packet(sr, interface, eth_hdr->ether_shost, ip_hdr->ip_src, 11, 0);
+			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0);
 			return;
 		}
 
@@ -260,6 +260,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				if (ip_protocol((uint8_t *) iphdr) == ip_protocol_icmp)
 				{
 					/* TODO: for now, we only handle echo request -> echo reply */
+					
+					/* Extract icmp header */
+					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
 
 					/* Echo Request */
 					if (ntohs(icmphdr->icmp_type) == 8)
@@ -307,7 +310,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				uint32_t gateIP = rtIter->gw.s_addr;
 
 				/* Get dest MAC Address from ARP Cache */
-				struct sr_arpentry * entry = sr_arpcache_lookup(sr->cache, gateIP);
+				struct sr_arpentry * entry = sr_arpcache_lookup(&(sr->cache), gateIP);
 				
 				/* Get source MAC Address from outgoing interface */
 				struct sr_if * outgoingIFace = sr_get_interface(sr, rtIter->interface);
@@ -318,7 +321,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					/* Send to Layer 2 */
 					send_layer_2(sr, packet, len, outgoingIFace->name, entry->mac, ethertype_ip);
 					free(entry);
-					return
+					return;
 				}
 
 				/* ARP Cache Miss */
