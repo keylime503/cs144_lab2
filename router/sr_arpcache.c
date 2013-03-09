@@ -13,18 +13,18 @@
 
 void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
 {
-    time_t now = time();
-    if (difftime(time(), req->sent) > 1.0)
+    time_t now = time(NULL);
+    if (difftime(now, req->sent) > 1.0)
     {
         if (req->times_sent >= 5)
         {
             /* TODO: send icmp host unreachable to source addr of all pkts waiting on this request */
-            arpreq_destroy(req);
+            sr_arpreq_destroy(&(sr->cache), req);
         }
         else
         {
             /* send arp request */
-            sr_if * = req->packets->iface
+            struct sr_if * = req->packets->iface;
             uint8_t bcast = { 255, 255, 255, 255, 255, 255};
             send_arp_packet(sr, req->packets->iface, (void *)bcast, req->ip, arp_op_request);
             req->sent = now;
@@ -42,7 +42,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     /* for each request on sr->cache.requests:
            handle_arpreq(request) */
     struct sr_arpreq * req_iter = sr->cache.requests;
-    for(req_iter = sr->cache.requests; req_iter != NULL, req_iter = req_iter->next)
+    for(req_iter = sr->cache.requests; req_iter != NULL; req_iter = req_iter->next)
     {
         handle_arpreq(sr, req_iter);
     }
