@@ -334,7 +334,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Routing entry not found -> ICMP network unreachable */
 		printf("Routing entry not found\n");
-		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, ip_hdr->ip_src, 3, 0);
+		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0);
 
 		return;
 	}
@@ -392,7 +392,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
       		/* matching_req now points to the sr_arpreq entry we need to add to cache 
       		   Send all packets waiting on this ARP Request*/
-      		sr_packet * pkt;
+      		struct sr_packet * pkt;
       		for(pkt = matching_req->packets, pkt != NULL, pkt = pkt->next)
       		{
       			send_layer_2(sr, pkt->buf, pkt->len, pkt->iface, arphdr->ar_sha, ethertype_ip);
