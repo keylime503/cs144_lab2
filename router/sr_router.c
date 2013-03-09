@@ -262,7 +262,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					/* TODO: for now, we only handle echo request -> echo reply */
 					
 					/* Extract icmp header */
-					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 					/* Echo Request */
 					if (ntohs(icmphdr->icmp_type) == 8)
@@ -289,7 +289,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				}
 
 				/* Send ICMP Packet */
-				send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, ip_hdr->ip_src, icmp_type, icmp_code);
+				send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, icmp_type, icmp_code);
 				return;
 			}
 
@@ -326,7 +326,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 				/* ARP Cache Miss */
 				struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gateIP, packet, len, outgoingIFace->name);
-       			handle_arpreq(req);
+       			handle_arpreq(sr, req);
 				return;
 			}
 			rtIter = rtIter->next;
