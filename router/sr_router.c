@@ -52,13 +52,13 @@ void sr_init(struct sr_instance* sr)
 } /* -- sr_init -- */
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, uint8_t icmp_type, uint8_t icmp_code)
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code)
 {
 	/* TODO: Handle sr_icmp_t3_hdr as well */
 
 	/* Create packet to hold ethernet header, ip header, and icmp header */
 	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
-	uint8_t * packet = (uint8_t) malloc((size_t) len);
+	uint8_t * packet = (uint8_t *) malloc((size_t) len);
 
 	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(ip_hdr + sizeof(sr_icmp_hdr_t));
@@ -70,19 +70,19 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
 
 	/* Get sr_if for ip_src */
-	sr_if * outgoingIFace = sr_get_interface(interface);
+	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out IP header */
 	/* TODO: What do we do with all the other ip_hdr fields */
-	ip_hdr->ip_ttl = 64; // default
+	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
 	ip_hdr->ip_src = outgoingIFace->ip;
-	ip_hdr->ip_dst = ip_dst;
+	ip_hdr->ip_dst = ip_dest;
 	ip_hdr->ip_sum = 0;
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_dst, ethertype_ip);
+	send_layer_2(sr, packet, len, interface, ether_dest, ethertype_ip);
 
 	return;
 }
@@ -108,10 +108,10 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 	arp_hdr->ar_sip = outgoingIFace->ip;
 	arp_hdr->ar_tip = ip_dst;
 	memcpy(arp_hdr->ar_sha, outgoingIFace->addr, ETHER_ADDR_LEN);
-	memcpy(arp_hdr->ar_tha, ether_dst, ETHER_ADDR_LEN);
+	memcpy(arp_hdr->ar_tha, ether_dest, ETHER_ADDR_LEN);
 
 	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_dst, ethertype_arp);
+	send_layer_2(sr, packet, len, interface, ether_dest, ethertype_arp);
 
 	return;
 }
