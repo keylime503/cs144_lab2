@@ -248,7 +248,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     			uint8_t icmp_type;
     			uint8_t icmp_code;
 
-
     			/* What is the protocol field in IP header? */
 				
 				/* ICMP Protocol */
@@ -295,6 +294,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		struct sr_rt * rtIter = sr->routing_table;
 		while(rtIter)
 		{
+			/* TODO: Fix longest prefix match */
 			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
 				printf("Routing Table match\n");
@@ -316,28 +316,11 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					free(entry);
 					return
 				}
+
 				/* ARP Cache Miss */
-				else
-				{
-					// TODO: Following two lines were taken from sr_arpcache.h, fix them
-					req = arpcache_queuereq(next_hop_ip, packet, len);
-       				handle_arpreq(req);
-				}
-
-				/* Send ARP Request on each interface */
-				/*if_walker = = sr->if_list;
-				while(if_walker)
-				{
-					send_arp_packet(sr, if_walker->name, if_walker->addr, bcast, 
-    					if_walker->ip, iphdr->ip_dst, arp_op_request);
-
-					if_walker = if_walker->next;
-				}*/
-
-				// TODO: Send every second? And wait for reply?
-				
-				return ???
-
+				struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gateIP, packet, len, outgoingIFace->name);
+       			handle_arpreq(req);
+				return;
 			}
 			rtIter = rtIter->next;
 		}
@@ -393,7 +376,27 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       	/* ARP reply */
       	else if(ntohs(arphdr->ar_op) == 2)
       	{
+      		/* Find the entry in the request queue that matches the source IP */
+      		struct sr_arpreq * matching_req = sr_arpcache_insert( &(sr->cache), arphdr->ar_sha, arphdr->ar_sip);
 
+      		/* If ip in ARP header matches none of our requests in the queue */
+      		if(matching_req == NULL)
+      		{
+      			/* Drop this packet */
+      			return;
+      		}
+
+      		/* matching_req now points to the sr_arpreq entry we need to add to cache 
+      		   Send all packets waiting on this ARP Request*/
+      		sr_packet * pkt;
+      		for(pkt = matching_req->packets, pkt != NULL, pkt = pkt->next)
+      		{
+      			send_layer_2(sr, pkt->buf, pkt->len, pkt->iface, sr_get_interface(sr, pkt->iface)->addr, arphdr->ar_sha, ethertype_ip);
+      		}
+
+      		/* Remove the entry in the request queue */
+      		sr_arpreq_destroy(&(sr->cache), matching_req);
+      		return;
       	}
       	
       	else
