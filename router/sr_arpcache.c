@@ -11,19 +11,22 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
-void handle_arpreq(sr_arpreq * req)
+void handle_arpreq(struct sr_instance* sr, sr_arpreq * req)
 {
     time_t now = time();
     if (difftime(time(), req->sent) > 1.0)
     {
         if (req->times_sent >= 5)
         {
-            /* send icmp host unreachable to source addr of all pkts waiting on this request */
+            /* TODO: send icmp host unreachable to source addr of all pkts waiting on this request */
             arpreq_destroy(req);
         }
         else
         {
             /* send arp request */
+            sr_if * = req->packets->iface
+            uint8_t bcast = { 255, 255, 255, 255, 255, 255};
+            send_arp_packet(sr, req->packets->iface, (void *)bcast, req->ip, arp_op_request);
             req->sent = now;
             req->times_sent++;
         }
@@ -38,6 +41,11 @@ void handle_arpreq(sr_arpreq * req)
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* for each request on sr->cache.requests:
            handle_arpreq(request) */
+    struct sr_arpreq * req_iter = sr->cache.requests;
+    for(req_iter = sr->cache.requests; req_iter != NULL, req_iter = req_iter->next)
+    {
+        handle_arpreq(sr, req_iter);
+    }
 }
 
 /* You should not need to touch the rest of this code. */

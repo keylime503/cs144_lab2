@@ -51,7 +51,7 @@ void sr_init(struct sr_instance* sr)
 } /* -- sr_init -- */
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_src, void * ether_dest, 
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
     					uint32_t ip_src, uint32_t ip_dst, uint8_t icmp_type, uint8_t icmp_code)
 {
 	// TODO: Handle sr_icmp_t3_hdr as well
@@ -79,14 +79,13 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_src, ether_dst, ethertype_ip);
+	send_layer_2(sr, packet, len, interface, ether_dst, ethertype_ip);
 
 	return;
 }
 
 /* Method to send ARP packet (fills ARP header, sends to send_later_2) to an interface. */
-void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_src, void * ether_dest, 
-    					uint32_t ip_src, uint32_t ip_dst, unsigned short ar_op)
+void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, unsigned short ar_op)
 {	
 	/* Create packet to hold ethernet header and arp header */
 	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -94,32 +93,37 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 
 	sr_arp_hdr_t * arp_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
+	/* Get sr_if for srcMAC address */
+	sr_if * outgoingIFace = sr_get_interface(sr, interface);
+
 	/* Fill out ARP header */
 	arp_hdr->ar_hrd = arp_hrd_ethernet;
 	arp_hdr->ar_pro = 0x0800;
 	arp_hdr->ar_hln = ETHER_ADDR_LEN;
 	arp_hdr->ar_pln = 4;
 	arp_hdr->ar_op = htons(ar_op);
-	arp_hdr->ar_sip = ip_src;
+	arp_hdr->ar_sip = outgoingIFace->ip;
 	arp_hdr->ar_tip = ip_dst;
-	memcpy(arp_hdr->ar_sha, ether_src, ETHER_ADDR_LEN);
+	memcpy(arp_hdr->ar_sha, outgoingIFace->addr, ETHER_ADDR_LEN);
 	memcpy(arp_hdr->ar_tha, ether_dst, ETHER_ADDR_LEN);
 
 	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_src, ether_dst, ethertype_arp);
+	send_layer_2(sr, packet, len, interface, ether_dst, ethertype_arp);
 
 	return;
 }
 
 /* Method to send packets (with space for ethernet header) to an interface. */
 void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, 
-					char* interface/* lent */, void * src, void * dest, uint16_t type)
+					char* interface/* lent */, void * destMAC, uint16_t type)
 {
-	sr_ethernet_hdr_t * eth_hdr = packet;
-
+	/* Get sr_if for srcMAC address */
+	sr_if * outgoingIFace = sr_get_interface(sr, interface);
+	
 	/* Modify Ethernet header */
-	memcpy(eth_hdr->ether_dhost, dest, ETHER_ADDR_LEN);
-	memcpy(eth_hdr->ether_shost, src, ETHER_ADDR_LEN);
+	sr_ethernet_hdr_t * eth_hdr = packet;
+	memcpy(eth_hdr->ether_dhost, destMAC, ETHER_ADDR_LEN);
+	memcpy(eth_hdr->ether_shost, outgoingIFace->addr, ETHER_ADDR_LEN);
 	eth_hdr->ether_type = htons(type);
 
 	/* DEBUG: Print reply packet */
@@ -312,7 +316,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				if(entry)
 				{
 					/* Send to Layer 2 */
-					send_layer_2(sr, packet, len, outgoingIFace->name, outgoingIFace->addr, entry->mac, ethertype_ip);
+					send_layer_2(sr, packet, len, outgoingIFace->name, entry->mac, ethertype_ip);
 					free(entry);
 					return
 				}
@@ -359,9 +363,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     			if(if_walker->ip == targetIP)
     			{
     				/* Send ARP reply */
-    				send_arp_packet(sr, if_walker->name, if_walker->addr, arphdr->ar_sha, if_walker->ip,
-    									arphdr->ar_sip, arp_op_reply);
-    				
+    				send_arp_packet(sr, if_walker->name, arphdr->ar_sha,arphdr->ar_sip, arp_op_reply);
     				return;
     			}
 
@@ -391,7 +393,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
       		sr_packet * pkt;
       		for(pkt = matching_req->packets, pkt != NULL, pkt = pkt->next)
       		{
-      			send_layer_2(sr, pkt->buf, pkt->len, pkt->iface, sr_get_interface(sr, pkt->iface)->addr, arphdr->ar_sha, ethertype_ip);
+      			send_layer_2(sr, pkt->buf, pkt->len, pkt->iface, arphdr->ar_sha, ethertype_ip);
       		}
 
       		/* Remove the entry in the request queue */
