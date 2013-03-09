@@ -24,8 +24,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
         else
         {
             /* send arp request */
-            struct sr_if * = req->packets->iface;
-            uint8_t bcast = { 255, 255, 255, 255, 255, 255};
+            uint8_t bcast[] = { 255, 255, 255, 255, 255, 255};
             send_arp_packet(sr, req->packets->iface, (void *)bcast, req->ip, arp_op_request);
             req->sent = now;
             req->times_sent++;
