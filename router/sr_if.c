@@ -93,7 +93,7 @@ void sr_add_interface(struct sr_instance* sr, const char* name)
 } /* -- sr_add_interface -- */ 
 
 /*--------------------------------------------------------------------- 
- * Method: sr_sat_ether_addr(..)
+ * Method: sr_set_ether_addr(..)
  * Scope: Global
  *
  * set the ethernet address of the LAST interface in the interface list

@@ -66,6 +66,10 @@ int sr_read_from_server(struct sr_instance* );
 
 /* -- sr_router.c -- */
 void sr_init(struct sr_instance* );
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, uint8_t icmp_type, uint8_t icmp_code);
+void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, unsigned short ar_op);
+void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned int len, 
+                    char* interface/* lent */, void * destMAC, uint16_t type);
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
 
 /* -- sr_if.c -- */
