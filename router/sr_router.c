@@ -67,7 +67,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		packet = (uint8_t *) malloc((size_t) len);
 
 		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-		sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(ip_hdr + 5);
+		sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 		/* Fill out ICMP header */
 		icmp_3_hdr->icmp_type = icmp_type;
@@ -85,7 +85,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
 		packet = (uint8_t *) malloc((size_t) len);
 		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(ip_hdr + 5);
+		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 		/* Fill out ICMP header */
 		icmp_hdr->icmp_type = icmp_type;
@@ -102,7 +102,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	ip_hdr->ip_hl = 5;
 	ip_hdr->ip_v = 4;
 	ip_hdr->ip_tos = 0;
-	ip_hdr->ip_len = len - 14;
+	ip_hdr->ip_len = htons(len - 14);
 	ip_hdr->ip_id = 0; /* Fix Maybe */
 	ip_hdr->ip_off = 0;
 	ip_hdr->ip_ttl = 64; 
