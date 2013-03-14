@@ -100,8 +100,8 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out ARP header */
-	arp_hdr->ar_hrd = arp_hrd_ethernet;
-	arp_hdr->ar_pro = 0x0800;
+	arp_hdr->ar_hrd = htons(arp_hrd_ethernet);
+	arp_hdr->ar_pro = htons(2048);
 	arp_hdr->ar_hln = ETHER_ADDR_LEN;
 	arp_hdr->ar_pln = 4;
 	arp_hdr->ar_op = htons(ar_op);
