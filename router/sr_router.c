@@ -52,7 +52,7 @@ void sr_init(struct sr_instance* sr)
 } /* -- sr_init -- */
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dest, uint8_t icmp_type, uint8_t * icmp_code, uint8_t type_3_data)
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
 {
 	unsigned int len;
 	sr_ip_hdr_t * ip_hdr;
@@ -72,7 +72,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		icmp_3_hdr->icmp_code = htons(icmp_code);
 		icmp_3_hdr->unused = 0;
 		icmp_3_hdr->next_mtu = 0;
-		memcpy(type_3_data, icmp_3_hdr->data, ICMP_DATA_SIZE)
+		memcpy(type_3_data, icmp_3_hdr->data, ICMP_DATA_SIZE);
 		icmp_3_hdr->icmp_sum = 0;
 		icmp_3_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
 	}
