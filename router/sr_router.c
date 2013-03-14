@@ -74,7 +74,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		icmp_3_hdr->next_mtu = 0;
 		memcpy(type_3_data, icmp_3_hdr->data, ICMP_DATA_SIZE);
 		icmp_3_hdr->icmp_sum = 0;
-		icmp_3_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
+		icmp_3_hdr->icmp_sum = cksum((void *) icmp_3_hdr, sizeof(sr_icmp_t3_hdr_t));
 	}
 
 	else /* Regular icmp header */
