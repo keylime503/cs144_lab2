@@ -70,8 +70,8 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(ip_hdr + sizeof(sr_ip_hdr_t));
 
 		/* Fill out ICMP header */
-		icmp_3_hdr->icmp_type = htons(icmp_type);
-		icmp_3_hdr->icmp_code = htons(icmp_code);
+		icmp_3_hdr->icmp_type = icmp_type;
+		icmp_3_hdr->icmp_code = icmp_code;
 		icmp_3_hdr->unused = 0;
 		icmp_3_hdr->next_mtu = 0;
 		memcpy(type_3_data, icmp_3_hdr->data, ICMP_DATA_SIZE);
@@ -88,8 +88,8 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(ip_hdr + sizeof(sr_ip_hdr_t));
 
 		/* Fill out ICMP header */
-		icmp_hdr->icmp_type = htons(icmp_type);
-		icmp_hdr->icmp_code = htons(icmp_code);
+		icmp_hdr->icmp_type = icmp_type;
+		icmp_hdr->icmp_code = icmp_code;
 		icmp_hdr->icmp_sum = 0;
 		icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
 	}
@@ -99,6 +99,10 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 
 	/* Fill out IP header */
 	/* TODO: What do we do with all the other ip_hdr fields */
+	ip_hdr->ip_hl = 5;
+	ip_hdr->ip_v = 4;
+	ip_hdr->ip_tos = 0;
+	ip_hdr->ip_len = len; /* FIX! */
 	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
 	ip_hdr->ip_src = outgoingIFace->ip;
@@ -155,7 +159,7 @@ void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned i
 	eth_hdr->ether_type = htons(type);
 
 	/* DEBUG: Print reply packet */
-	print_hdrs(packet, (uint32_t) len); 
+	/* print_hdrs(packet, (uint32_t) len); */
 
 	/* Send a reply packet */
 	sr_send_packet(sr, packet, len, interface);
@@ -188,7 +192,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 	printf("*** -> Received packet of length %d \n",len);
 	printf("*** -> From interface %s \n", interface);
-	/*print_hdrs(packet, (uint32_t) len);*/
+	print_hdrs(packet, (uint32_t) len);
 
 	/*---------------------------------------------------------------------
 	 * Layer 2
