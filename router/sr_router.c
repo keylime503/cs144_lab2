@@ -257,7 +257,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		iphdr->ip_ttl--;
 
 		/* If TTL is 0, drop packet and send ICMP Time Exceded */
-		if(iphdr->ip_ttl <= 0)
+		if(iphdr->ip_ttl == 0)
 		{
 			/* Send ICMP Message */
 			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL);
