@@ -52,28 +52,59 @@ void sr_init(struct sr_instance* sr)
 } /* -- sr_init -- */
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code)
+void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
 {
-	/* TODO: Handle sr_icmp_t3_hdr as well */
+	unsigned int len;
+	sr_ip_hdr_t * ip_hdr;
+	uint8_t * packet;
+	
+	printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);
 
-	/* Create packet to hold ethernet header, ip header, and icmp header */
-	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
-	uint8_t * packet = (uint8_t *) malloc((size_t) len);
+	if(icmp_type == 3)
+	{
+		/* Create packet to hold ethernet header, ip header, and icmp type 3 header */
+		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+		packet = (uint8_t *) malloc((size_t) len);
 
-	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(ip_hdr + sizeof(sr_icmp_hdr_t));
+		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+		sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
-	/* Fill out ICMP header */
-	icmp_hdr->icmp_type = htons(icmp_type);
-	icmp_hdr->icmp_code = htons(icmp_code);
-	icmp_hdr->icmp_sum = 0;
-	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
+		/* Fill out ICMP header */
+		icmp_3_hdr->icmp_type = icmp_type;
+		icmp_3_hdr->icmp_code = icmp_code;
+		icmp_3_hdr->unused = 0;
+		icmp_3_hdr->next_mtu = 0;
+		memcpy(type_3_data, icmp_3_hdr->data, ICMP_DATA_SIZE);
+		icmp_3_hdr->icmp_sum = 0;
+		icmp_3_hdr->icmp_sum = cksum((void *) icmp_3_hdr, sizeof(sr_icmp_t3_hdr_t));
+	}
+
+	else /* Regular icmp header */
+	{
+		/* Create packet to hold ethernet header, ip header, and icmp header */
+		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
+		packet = (uint8_t *) malloc((size_t) len);
+		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+		/* Fill out ICMP header */
+		icmp_hdr->icmp_type = icmp_type;
+		icmp_hdr->icmp_code = icmp_code;
+		icmp_hdr->icmp_sum = 0;
+		icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
+	}
 
 	/* Get sr_if for ip_src */
 	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out IP header */
 	/* TODO: What do we do with all the other ip_hdr fields */
+	ip_hdr->ip_hl = 5;
+	ip_hdr->ip_v = 4;
+	ip_hdr->ip_tos = 0;
+	ip_hdr->ip_len = htons(len - 14);
+	ip_hdr->ip_id = 0; /* Fix Maybe */
+	ip_hdr->ip_off = 0;
 	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
 	ip_hdr->ip_src = outgoingIFace->ip;
@@ -100,8 +131,8 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out ARP header */
-	arp_hdr->ar_hrd = arp_hrd_ethernet;
-	arp_hdr->ar_pro = 0x0800;
+	arp_hdr->ar_hrd = htons(arp_hrd_ethernet);
+	arp_hdr->ar_pro = htons(2048);
 	arp_hdr->ar_hln = ETHER_ADDR_LEN;
 	arp_hdr->ar_pln = 4;
 	arp_hdr->ar_op = htons(ar_op);
@@ -163,7 +194,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 	printf("*** -> Received packet of length %d \n",len);
 	printf("*** -> From interface %s \n", interface);
-	print_hdrs(packet, (uint32_t) len);
+	/*print_hdrs(packet, (uint32_t) len); */
 
 	/*---------------------------------------------------------------------
 	 * Layer 2
@@ -236,10 +267,10 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		iphdr->ip_ttl--;
 
 		/* If TTL is 0, drop packet and send ICMP Time Exceded */
-		if(iphdr->ip_ttl <= 0)
+		if(iphdr->ip_ttl == 0)
 		{
 			/* Send ICMP Message */
-			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0);
+			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL);
 			return;
 		}
 
@@ -253,9 +284,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		{
 			if(if_walker->ip == iphdr->ip_dst)
 			{
-    			uint8_t icmp_type;
-    			uint8_t icmp_code;
-
     			/* What is the protocol field in IP header? */
 				
 				/* ICMP Protocol */
@@ -269,32 +297,21 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					/* Echo Request */
 					if (ntohs(icmphdr->icmp_type) == 8)
 					{
-						icmp_type = 0;
-						icmp_code = 0;
+						send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 0,0, NULL);
 					}
-
 					/* Any other ICMP Message*/
-					else
-					{
-						/* FOR NOW!!! Drop packet */
-						return;
-					}
+					/* FOR NOW!!! Drop packet */
+					return;
 				}
 		
 				/* UDP, TCP -> ICMP port unreachable */
 				else
 				{
 					/* Reply ICMP destination port unreachable */
-					icmp_type = 3;
-					icmp_code = 3;
-
+					send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
-
-				/* Send ICMP Packet */
-				send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, icmp_type, icmp_code);
 				return;
 			}
-
 			if_walker = if_walker->next;
 		}
 
@@ -336,8 +353,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Routing entry not found -> ICMP network unreachable */
 		printf("Routing entry not found\n");
-		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0);
-
+		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
 	
