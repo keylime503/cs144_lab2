@@ -58,7 +58,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	sr_ip_hdr_t * ip_hdr;
 	uint8_t * packet;
 	
-	printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);
+	//printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);
 
 	if(icmp_type == 3)
 	{
@@ -192,8 +192,8 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	assert(packet);
 	assert(interface);
 
-	printf("*** -> Received packet of length %d \n",len);
-	printf("*** -> From interface %s \n", interface);
+	//printf("*** -> Received packet of length %d \n",len);
+	//printf("*** -> From interface %s \n", interface);
 	/*print_hdrs(packet, (uint32_t) len); */
 
 	/*---------------------------------------------------------------------
@@ -323,7 +323,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			/* TODO: Fix longest prefix match */
 			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
-				printf("Routing Table match\n");
+				//printf("Routing Table match\n");
 
 				/* Get gateway IP (next hop) */
 				uint32_t gateIP = rtIter->gw.s_addr;
@@ -352,7 +352,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Routing entry not found -> ICMP network unreachable */
-		printf("Routing entry not found\n");
+		//printf("Routing entry not found\n");
 		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
@@ -360,7 +360,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	/* ARP Packet */
 	else if (ethtype == ethertype_arp) 
 	{ 
-    	printf("Packet is IP Packet\n");
+    	printf("Packet is ARP Packet\n");
 
     	minlength += sizeof(sr_arp_hdr_t);
     	if (len < minlength)
