@@ -84,6 +84,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		/* Create packet to hold ethernet header, ip header, and icmp header */
 		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
 		packet = (uint8_t *) malloc((size_t) len);
+		
 		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
@@ -270,6 +271,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		if(iphdr->ip_ttl == 0)
 		{
 			/* Send ICMP Message */
+			printf("Sending ICMP Time Exceeded.\n");
 			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL);
 			return;
 		}
@@ -297,6 +299,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					/* Echo Request */
 					if (ntohs(icmphdr->icmp_type) == 8)
 					{
+						printf("Sending ICMP Echo Reply\n");
 						send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 0,0, NULL);
 					}
 					/* Any other ICMP Message*/
@@ -308,6 +311,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				else
 				{
 					/* Reply ICMP destination port unreachable */
+					printf("Sending ICMP3 Destination Port Unreachable\n");
 					send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
 				return;
@@ -353,6 +357,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Routing entry not found -> ICMP network unreachable */
 		//printf("Routing entry not found\n");
+		printf("Sending ICMP3 Network Unreachable\n");
 		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
