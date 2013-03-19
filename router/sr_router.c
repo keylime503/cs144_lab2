@@ -193,8 +193,13 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	assert(packet);
 	assert(interface);
 
-	// printf("*** -> Received packet of length %d \n",len);
+<<<<<<< HEAD
+	//printf("*** -> Received packet of length %d \n",len);
 	//printf("*** -> From interface %s \n", interface);
+=======
+	/*printf("*** -> Received packet of length %d \n",len);*/
+	/*printf("*** -> From interface %s \n", interface);*/
+>>>>>>> 03b5a8b4e68f021a7d8b8c632e79d26f7dba2314
 	/*print_hdrs(packet, (uint32_t) len); */
 
 	/*---------------------------------------------------------------------
@@ -327,7 +332,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			/* TODO: Fix longest prefix match */
 			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
-				//printf("Routing Table match\n");
+				/*printf("Routing Table match\n");*/
 
 				/* Get gateway IP (next hop) */
 				uint32_t gateIP = rtIter->gw.s_addr;
@@ -356,7 +361,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		}
 
 		/* Routing entry not found -> ICMP network unreachable */
-		//printf("Routing entry not found\n");
+		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
 		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
