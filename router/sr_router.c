@@ -58,7 +58,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	sr_ip_hdr_t * ip_hdr;
 	uint8_t * packet;
 	
-	//printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);
+	/*printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);*/
 
 	if(icmp_type == 3)
 	{
@@ -193,7 +193,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	assert(packet);
 	assert(interface);
 
-	//printf("*** -> Received packet of length %d \n",len);
+	// printf("*** -> Received packet of length %d \n",len);
 	//printf("*** -> From interface %s \n", interface);
 	/*print_hdrs(packet, (uint32_t) len); */
 
