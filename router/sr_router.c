@@ -162,7 +162,8 @@ void send_layer_2(struct sr_instance* sr, uint8_t * packet/* lent */, unsigned i
 	eth_hdr->ether_type = htons(type);
 
 	/* DEBUG: Print reply packet */
-	/*print_hdrs(packet, (uint32_t) len);*/
+	printf("*** -> Printing outgoing packet\n");
+	print_hdrs(packet, (uint32_t) len);
 
 	/* Send a reply packet */
 	sr_send_packet(sr, packet, len, interface);
