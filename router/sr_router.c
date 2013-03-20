@@ -57,7 +57,6 @@ void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * e
 {
 	/* Get length of ICMP header + data for cksum calculation */
 	int cksum_length = len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t);
-	printf("ICMP Echo Reply cksum length: %d\n", cksum_length);
 
 	/* Get pointers to ICMP and IP headers */
 	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));	
