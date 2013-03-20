@@ -193,13 +193,8 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	assert(packet);
 	assert(interface);
 
-<<<<<<< HEAD
-	//printf("*** -> Received packet of length %d \n",len);
-	//printf("*** -> From interface %s \n", interface);
-=======
 	/*printf("*** -> Received packet of length %d \n",len);*/
 	/*printf("*** -> From interface %s \n", interface);*/
->>>>>>> 03b5a8b4e68f021a7d8b8c632e79d26f7dba2314
 	/*print_hdrs(packet, (uint32_t) len); */
 
 	/*---------------------------------------------------------------------
