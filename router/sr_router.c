@@ -51,10 +51,40 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+/* Send echo reply ICMP message (for ping) */
+void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
+    					uint32_t ip_dest, uint8_t * packet, unsigned int len)
+{
+	/* Get length of ICMP header + data for cksum calculation */
+	int cksum_length = len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t);
+	printf("ICMP Echo Reply cksum length: %d\n", cksum_length);
+
+	/* Get pointers to ICMP and IP headers */
+	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));	
+	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+	/* Modify ICMP header */
+	icmp_hdr->icmp_type = 0;
+	icmp_hdr->icmp_code = 0;
+	icmp_hdr->icmp_sum = 0;
+	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, cksum_length);
+
+	/* Modify IP header */
+	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
+	ip_hdr->ip_src = outgoingIFace->ip;
+	ip_hdr->ip_dst = ip_dest;
+	ip_hdr->ip_sum = 0;
+	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
+
+	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
+	send_layer_2(sr, packet, len, interface, ether_dest, ethertype_ip);
+
+	return;
+}
+
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
 void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
-    					uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data,
-    					uint8_t * icmp_payload, unsigned int icmp_payload_len)
+							uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
 {
 	unsigned int len;
 	sr_ip_hdr_t * ip_hdr;
@@ -95,9 +125,6 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		icmp_hdr->icmp_code = icmp_code;
 		icmp_hdr->icmp_sum = 0;
 		icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
-
-		/* Copy over payload */
-		memcpy(icmp_hdr + sizeof(sr_icmp_hdr_t), icmp_payload, icmp_payload_len);
 	}
 
 	/* Get sr_if for ip_src */
@@ -277,7 +304,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			/* Send ICMP Message */
 			printf("Sending ICMP Time Exceeded.\n");
 			/* TODO: payload for next line??? */
-			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL, NULL, 0);
+			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL);
 			return;
 		}
 
@@ -313,13 +340,11 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 					/* Echo Request */
-					printf("ICMP type: %d\n", icmphdr->icmp_type);
 					if (icmphdr->icmp_type == 8)
 					{
 						printf("Sending ICMP Echo Reply\n");
 						/* TODO: Send from correct outgoing interface */
-						send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 0,0, NULL, 
-											(uint8_t *)(icmphdr + sizeof(sr_icmp_hdr_t)), (len - minlength));
+						send_echo_reply(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, packet, len);
 					}
 					/* Any other ICMP Message*/
 					/* FOR NOW!!! Drop packet */
@@ -331,7 +356,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					/* Reply ICMP destination port unreachable */
 					printf("Sending ICMP3 Destination Port Unreachable\n");
-					send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr, NULL, 0);
+					send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
 				return;
 			}
@@ -377,7 +402,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Routing entry not found -> ICMP network unreachable */
 		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
-		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr, NULL, 0);
+		send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
 	
