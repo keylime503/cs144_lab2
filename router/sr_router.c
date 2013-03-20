@@ -291,7 +291,18 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				if (ip_protocol((uint8_t *) iphdr) == ip_protocol_icmp)
 				{
 					/* TODO: for now, we only handle echo request -> echo reply */
-					
+
+					/* Check that the packet is long enough for an IP header */
+					minlength += sizeof(sr_icmp_hdr_t);
+					if (len < minlength) 
+					{
+						printf("Failed to extract ICMP header, insufficient length\n");
+						return;
+					}
+
+					printf("minlength: %d\n", minlength);
+					printf("len: %d\n", len);
+
 					/* Extract icmp header */
 					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
