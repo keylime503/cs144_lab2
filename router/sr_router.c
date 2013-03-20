@@ -349,7 +349,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 						printf("ether_shost: %s\n", eth_hdr->ether_shost);
 						printf("ip_src: %d\n", iphdr->ip_src);*/
 
-						send_echo_reply(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, packet, len);
+						send_echo_reply(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, packet, len);
 					}
 					/* Any other ICMP Message*/
 					/* FOR NOW!!! Drop packet */
@@ -361,7 +361,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					/* Reply ICMP destination port unreachable */
 					printf("Sending ICMP3 Destination Port Unreachable\n");
-					send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
+					send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
 				return;
 			}
