@@ -91,8 +91,8 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	
 	/*printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);*/
 
-	if(icmp_type == 3)
-	{
+	// if(icmp_type == 3)
+	// {
 		/* Create packet to hold ethernet header, ip header, and icmp type 3 header */
 		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 		packet = (uint8_t *) malloc((size_t) len);
@@ -108,23 +108,23 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 		memcpy(icmp_3_hdr->data, type_3_data, ICMP_DATA_SIZE);
 		icmp_3_hdr->icmp_sum = 0;
 		icmp_3_hdr->icmp_sum = cksum((void *) icmp_3_hdr, sizeof(sr_icmp_t3_hdr_t));
-	}
+	// }
 
-	else /* Regular icmp header */
-	{
-		/* Create packet to hold ethernet header, ip header, icmp header, and icmp payload */
-		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
-		packet = (uint8_t *) malloc((size_t) len);
+	// else /* Regular icmp header */
+	// {
+	// 	/* Create packet to hold ethernet header, ip header, icmp header, and icmp payload */
+	// 	len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
+	// 	packet = (uint8_t *) malloc((size_t) len);
 		
-		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-		sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	// 	ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	// 	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
-		/* Fill out ICMP header */
-		icmp_hdr->icmp_type = icmp_type;
-		icmp_hdr->icmp_code = icmp_code;
-		icmp_hdr->icmp_sum = 0;
-		icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
-	}
+	// 	/* Fill out ICMP header */
+	// 	icmp_hdr->icmp_type = icmp_type;
+	// 	icmp_hdr->icmp_code = icmp_code;
+	// 	icmp_hdr->icmp_sum = 0;
+	// 	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
+	// }
 
 	/* Get sr_if for ip_src */
 	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
@@ -303,7 +303,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			/* Send ICMP Message */
 			printf("Sending ICMP Time Exceeded.\n");
 			/* TODO: payload for next line??? */
-			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, NULL);
+			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 11, 0, (uint8_t *)iphdr);
 			return;
 		}
 
