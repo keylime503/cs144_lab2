@@ -240,7 +240,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	/* IP packet*/
 	if (ethtype == ethertype_ip) 
 	{ 
-		printf("Packet is IP Packet\n");
+		// printf("Packet is IP Packet\n");
 
 		/* Check that the packet is long enough for an IP header */
 		minlength += sizeof(sr_ip_hdr_t);
@@ -297,6 +297,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					sr_icmp_hdr_t * icmphdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 					/* Echo Request */
+					printf("ICMP type: %d\n", icmphdr->icmp_type);
 					if (ntohs(icmphdr->icmp_type) == 8)
 					{
 						printf("Sending ICMP Echo Reply\n");
@@ -365,7 +366,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 	/* ARP Packet */
 	else if (ethtype == ethertype_arp) 
 	{ 
-    	printf("Packet is ARP Packet\n");
+    	// printf("Packet is ARP Packet\n");
 
     	minlength += sizeof(sr_arp_hdr_t);
     	if (len < minlength)
