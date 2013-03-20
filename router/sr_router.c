@@ -88,49 +88,27 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	unsigned int len;
 	sr_ip_hdr_t * ip_hdr;
 	uint8_t * packet;
-	
-	/*printf("ICMP type: %u, ICMP code: %u\n", icmp_type, icmp_code);*/
 
-	// if(icmp_type == 3)
-	// {
-		/* Create packet to hold ethernet header, ip header, and icmp type 3 header */
-		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
-		packet = (uint8_t *) malloc((size_t) len);
+	/* Create packet to hold ethernet header, ip header, and icmp type 3 header */
+	len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+	packet = (uint8_t *) malloc((size_t) len);
 
-		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-		sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
-		/* Fill out ICMP header */
-		icmp_3_hdr->icmp_type = icmp_type;
-		icmp_3_hdr->icmp_code = icmp_code;
-		icmp_3_hdr->unused = 0;
-		icmp_3_hdr->next_mtu = 0;
-		memcpy(icmp_3_hdr->data, type_3_data, ICMP_DATA_SIZE);
-		icmp_3_hdr->icmp_sum = 0;
-		icmp_3_hdr->icmp_sum = cksum((void *) icmp_3_hdr, sizeof(sr_icmp_t3_hdr_t));
-	// }
-
-	// else /* Regular icmp header */
-	// {
-	// 	/* Create packet to hold ethernet header, ip header, icmp header, and icmp payload */
-	// 	len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
-	// 	packet = (uint8_t *) malloc((size_t) len);
-		
-	// 	ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-	// 	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-
-	// 	/* Fill out ICMP header */
-	// 	icmp_hdr->icmp_type = icmp_type;
-	// 	icmp_hdr->icmp_code = icmp_code;
-	// 	icmp_hdr->icmp_sum = 0;
-	// 	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, sizeof(sr_icmp_hdr_t));
-	// }
+	/* Fill out ICMP header */
+	icmp_3_hdr->icmp_type = icmp_type;
+	icmp_3_hdr->icmp_code = icmp_code;
+	icmp_3_hdr->unused = 0;
+	icmp_3_hdr->next_mtu = 0;
+	memcpy(icmp_3_hdr->data, type_3_data, ICMP_DATA_SIZE);
+	icmp_3_hdr->icmp_sum = 0;
+	icmp_3_hdr->icmp_sum = cksum((void *) icmp_3_hdr, sizeof(sr_icmp_t3_hdr_t));
 
 	/* Get sr_if for ip_src */
 	struct sr_if * outgoingIFace = sr_get_interface(sr, interface);
 
 	/* Fill out IP header */
-	/* TODO: What do we do with all the other ip_hdr fields */
 	ip_hdr->ip_hl = 5;
 	ip_hdr->ip_v = 4;
 	ip_hdr->ip_tos = 0;
