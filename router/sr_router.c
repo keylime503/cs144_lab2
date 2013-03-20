@@ -114,7 +114,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	else /* Regular icmp header */
 	{
 		/* Create packet to hold ethernet header, ip header, icmp header, and icmp payload */
-		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t) + icmp_payload_len;
+		len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
 		packet = (uint8_t *) malloc((size_t) len);
 		
 		ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
