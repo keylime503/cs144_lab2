@@ -346,9 +346,9 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 						/* TODO: Send from correct outgoing interface */
 
 						/* Debugging info */
-						printf("if_walker->name: %s\n", if_walker->name);
+						/*printf("if_walker->name: %s\n", if_walker->name);
 						printf("ether_shost: %s\n", eth_hdr->ether_shost);
-						printf("ip_src: %d\n", iphdr->ip_src);
+						printf("ip_src: %d\n", iphdr->ip_src);*/
 
 						send_echo_reply(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, packet, len);
 					}
