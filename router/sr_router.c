@@ -296,7 +296,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 					/* Echo Request */
 					printf("ICMP type: %d\n", icmphdr->icmp_type);
-					if (ntohs(icmphdr->icmp_type) == 8)
+					if (icmphdr->icmp_type == 8)
 					{
 						printf("Sending ICMP Echo Reply\n");
 						send_icmp_packet(sr, if_walker->name, eth_hdr->ether_shost, iphdr->ip_src, 0,0, NULL);
