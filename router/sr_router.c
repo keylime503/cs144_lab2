@@ -124,18 +124,17 @@ void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)
 }
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
-							uint32_t ip_dest, uint32_t ip_src, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
+void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint32_t ip_src, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
 {
 	unsigned int len;
-	sr_ip_hdr_t * ip_hdr;
 	uint8_t * packet;
 
 	/* Create packet to hold ethernet header, ip header, and icmp type 3 header */
 	len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 	packet = (uint8_t *) malloc((size_t) len);
 
-	ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr_t *) packet;
+	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	sr_icmp_t3_hdr_t * icmp_3_hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 	/* Fill out ICMP header */
@@ -157,13 +156,38 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
 	ip_hdr->ip_src = ip_src;
-	ip_hdr->ip_dst = ip_dest;
+	ip_hdr->ip_dst = ip_dst;
 	ip_hdr->ip_sum = 0;
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
-	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_dest, ethertype_ip);
+	/* Lookup ip_dst in routing table */
+	struct sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
+	if (rtIter)
+	{
+		/* Lookup gateway IP in ARP table */
+		uint32_t gwIP = rtIter->gw.s_addr;
 
+		struct sr_arpentry * entry = sr_arpcache_lookup( &(sr->cache), gwIP);
+		if (entry)
+		{
+			/* Send to Layer 2 */
+			send_layer_2(sr, packet, len, rtIter->interface, entry->mac, ethertype_ip);
+       		free (entry);	
+       		return;
+		}
+ 		else
+       	{
+       		memcpy(eth_hdr->ether_shost, sr_get_interface(sr, rtIter->interface)->addr, ETHER_ADDR_LEN);
+       		struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gwIP, packet, len, rtIter->interface);
+       		handle_arpreq(sr, req);
+			return;
+       	}
+	}
+	else
+	{
+		/* Drop packet */
+		return;
+	}
 	return;
 }
 
