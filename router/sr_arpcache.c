@@ -21,9 +21,9 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
             struct sr_packet * packet_ptr = req->packets;
             while (packet_ptr)
             {
-                sr_ether_hdr_t * eth_hdr = (sr_ether_hdr_t *) packet_ptr->buf;
-                sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ether_hdr_t));
-                send_icmp_packet(sr, ip_hdr->ip_dst, 3, 1, ip_hdr);
+                sr_ether_hdr_t * ethernet_hdr = (sr_ethernet_hdr_t *) packet_ptr->buf;
+                sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+                send_icmp_packet(sr, ip_hdr->ip_dst, 3, 1, (uint8_t *)ip_hdr);
                 packet_ptr = packet_ptr->next;
             }
             sr_arpreq_destroy(&(sr->cache), req);
