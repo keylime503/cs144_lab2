@@ -124,7 +124,7 @@ void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)
 }
 
 /* Method to send ICMP packet (fills IP header, sends to send_layer_2) to an interface. */
-void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint32_t ip_src, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
+void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data)
 {
 	unsigned int len;
 	uint8_t * packet;
@@ -155,7 +155,7 @@ void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint32_t ip_src, 
 	ip_hdr->ip_off = 0;
 	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
-	ip_hdr->ip_src = ip_src;
+	/*ip_hdr->ip_src = ip_src;*/
 	ip_hdr->ip_dst = ip_dst;
 	ip_hdr->ip_sum = 0;
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
@@ -164,6 +164,9 @@ void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint32_t ip_src, 
 	struct sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
 	if (rtIter)
 	{
+		/* Assign IP header's ip_src */
+		ip_hdr->ip_src = sr_get_interface(sr, rtIter->interface)->ip;
+
 		/* Lookup gateway IP in ARP table */
 		uint32_t gwIP = rtIter->gw.s_addr;
 
@@ -343,7 +346,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		{
 			/* Send ICMP Message */
 			printf("Sending ICMP Time Exceeded.\n");
-			send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, recievingInterface->ip, 11, 0, (uint8_t *)iphdr);
+			send_icmp_packet(sr, iphdr->ip_src, 11, 0, (uint8_t *)iphdr);
 			return;
 		}
 
@@ -391,7 +394,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					/* Reply ICMP destination port unreachable */
 					printf("Sending ICMP3 Destination Port Unreachable\n");
-					send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
+					send_icmp_packet(sr, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
 				return;
 			}
@@ -436,7 +439,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Routing entry not found -> ICMP network unreachable */
 		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
-		send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
+		send_icmp_packet(sr, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
 	
