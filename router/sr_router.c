@@ -337,22 +337,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			return;
 		}
 
-		/* Decrement TTL */
-		iphdr->ip_ttl--;
-
-		/* If TTL is 0, drop packet and send ICMP Time Exceded */
-		if(iphdr->ip_ttl == 0)
-		{
-			/* Send ICMP Message */
-			printf("Sending ICMP Time Exceeded.\n");
-			send_icmp_packet(sr, iphdr->ip_src, 11, 0, (uint8_t *)iphdr);
-			return;
-		}
-
-		/* Recompute Cksum */
-		iphdr->ip_sum = 0;
-		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
-
 		/* Destined to router */
 		struct sr_if* if_walker = sr->if_list;
 		while(if_walker)
@@ -399,6 +383,22 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			}
 			if_walker = if_walker->next;
 		}
+
+		/* Decrement TTL */
+		iphdr->ip_ttl--;
+
+		/* If TTL is 0, drop packet and send ICMP Time Exceded */
+		if(iphdr->ip_ttl == 0)
+		{
+			/* Send ICMP Message */
+			printf("Sending ICMP Time Exceeded.\n");
+			send_icmp_packet(sr, iphdr->ip_src, 11, 0, (uint8_t *)iphdr);
+			return;
+		}
+
+		/* Recompute Cksum */
+		iphdr->ip_sum = 0;
+		iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
 
 		/* Destined to others */
 		/* Lookup Routing Table */
