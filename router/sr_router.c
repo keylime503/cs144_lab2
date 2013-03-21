@@ -442,7 +442,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     			if(if_walker->ip == targetIP)
     			{
     				/* Send ARP reply */
-    				send_arp_packet(sr, if_walker->name, arphdr->ar_sha, arphdr->ar_sip, arphdr->ar_sip, arp_op_reply);
+    				send_arp_packet(sr, if_walker->name, arphdr->ar_sha, arphdr->ar_sip, arp_op_reply);
     				return;
     			}
 
