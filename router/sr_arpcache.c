@@ -19,6 +19,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
         if (req->times_sent >= 5)
         {
             struct sr_packet * packet_ptr = req->packets;
+            printf("Outside While Loop");
             while (packet_ptr != NULL)
             {
                 printf("A");
