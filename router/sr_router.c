@@ -51,15 +51,15 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
-struct sr_if * lookupRoutingTbl(struct sr_instance* sr)
+struct sr_rt * lookupRoutingTbl(struct sr_instance* sr, uint32_t ip_dest)
 {
 	struct sr_rt * rtIter = sr->routing_table;
 	while(rtIter)
 	{
 		/* TODO: Fix longest prefix match */
-		if(rtIter->dest.s_addr == iphdr->ip_dst)
+		if(rtIter->dest.s_addr == ip_dest)
 		{
-			return sr_get_interface(sr, rtIter->interface);
+			return rtIter;
 		}
 		rtIter = rtIter->next;
 	}
@@ -68,8 +68,7 @@ struct sr_if * lookupRoutingTbl(struct sr_instance* sr)
 
 
 /* Send echo reply ICMP message (for ping) */
-void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
-    					uint32_t ip_dest, uint32_t ip_src, uint8_t * packet, unsigned int len)
+void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)
 {
 	/* Get length of ICMP header + data for cksum calculation */
 	int cksum_length = len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t);
@@ -77,6 +76,7 @@ void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * e
 	/* Get pointers to ICMP and IP headers */
 	sr_icmp_hdr_t * icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));	
 	sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr_t *) packet;
 
 	/* Modify ICMP header */
 	icmp_hdr->icmp_type = 0;
@@ -85,13 +85,40 @@ void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * e
 	icmp_hdr->icmp_sum = cksum((void *) icmp_hdr, cksum_length);
 
 	/* Modify IP header */
-	ip_hdr->ip_src = ip_src;
-	ip_hdr->ip_dst = ip_dest;
+	uint32_t temp_ip = ip_hdr->ip_src;
+	ip_hdr->ip_src = ip_hdr->ip_dst;
+	ip_hdr->ip_dst = temp_ip;
 	ip_hdr->ip_sum = 0;
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
-	/* Send packet with space for ethernet to send_layer_2() to actually send packet */
-	send_layer_2(sr, packet, len, interface, ether_dest, ethertype_ip);
+	/* Lookup ip_dst in routing table */
+	strut sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
+	if (rtIter)
+	{
+		/* Lookup gateway IP in ARP table */
+		uint32_t gwIP = rtIter->gw.s_addr;
+
+		struct sr_arpentry * entry = sr_arpcache_lookup(sr->cache, gwIP);
+		if (entry)
+		{
+			/* Send to Layer 2 */
+			send_layer_2(sr, packet, len, rtIter->interface, entry->mac, ethertype_ip);
+       		free (entry);	
+       		return;
+		}
+ 		else
+       	{
+       		memcpy(eth_hdr->ar_sha, sr_get_interface(sr, interface)->addr, ETHER_ADDR_LEN);
+       		struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gwIP, packet, len, rtIter->interface);
+       		handle_arpreq(sr, req);
+			return;
+       	}
+	}
+	else
+	{
+		/* Drop packet */
+		return;
+	}
 
 	return;
 }
@@ -328,7 +355,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 					if (icmphdr->icmp_type == 8)
 					{
 						printf("Sending ICMP Echo Reply\n");
-						send_echo_reply(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, recievingInterface->ip, packet, len);
+						send_echo_reply(sr, packet, len);
 					}
 					/* Any other ICMP Message*/
 					/* FOR NOW!!! Drop packet */
