@@ -26,7 +26,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
                 send_icmp_packet(sr, ip_hdr->ip_dst, 3, 1, (uint8_t *)ip_hdr);
                 packet_ptr = packet_ptr->next;
             }
-            sr_arpreq_destroy(&(sr->cache), req);
+            /*sr_arpreq_destroy(&(sr->cache), req);*/
         }
         else
         {
