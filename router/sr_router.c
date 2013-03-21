@@ -51,6 +51,22 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+struct sr_if * lookupRoutingTbl(struct sr_instance* sr)
+{
+	struct sr_rt * rtIter = sr->routing_table;
+	while(rtIter)
+	{
+		/* TODO: Fix longest prefix match */
+		if(rtIter->dest.s_addr == iphdr->ip_dst)
+		{
+			return sr_get_interface(sr, rtIter->interface);
+		}
+		rtIter = rtIter->next;
+	}
+	return NULL;
+}
+
+
 /* Send echo reply ICMP message (for ping) */
 void send_echo_reply(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, 
     					uint32_t ip_dest, uint32_t ip_src, uint8_t * packet, unsigned int len)
@@ -339,8 +355,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			/* TODO: Fix longest prefix match */
 			if(rtIter->dest.s_addr == iphdr->ip_dst)
 			{
-				/*printf("Routing Table match\n");*/
-
 				/* Get gateway IP (next hop) */
 				uint32_t gateIP = rtIter->gw.s_addr;
 
@@ -366,6 +380,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 			}
 			rtIter = rtIter->next;
 		}
+
 
 		/* Routing entry not found -> ICMP network unreachable */
 		/*printf("Routing entry not found\n");*/
