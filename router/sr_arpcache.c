@@ -21,9 +21,13 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
             struct sr_packet * packet_ptr = req->packets;
             while (packet_ptr)
             {
+                printf("A");
                 sr_ethernet_hdr_t * ethernet_hdr = (sr_ethernet_hdr_t *) packet_ptr->buf;
+                printf("B");
                 sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet_ptr->buf + sizeof(sr_ethernet_hdr_t));
+                printf("C");
                 send_icmp_packet(sr, ip_hdr->ip_dst, 3, 1, (uint8_t *)ip_hdr);
+                printf("D");
                 packet_ptr = packet_ptr->next;
             }
             /*sr_arpreq_destroy(&(sr->cache), req);*/
