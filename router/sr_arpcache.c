@@ -19,7 +19,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
         if (req->times_sent >= 5)
         {
             struct sr_packet * packet_ptr = req->packets;
-            while (packet_ptr)
+            while (packet_ptr != NULL)
             {
                 printf("A");
                 sr_ethernet_hdr_t * ethernet_hdr = (sr_ethernet_hdr_t *) packet_ptr->buf;
