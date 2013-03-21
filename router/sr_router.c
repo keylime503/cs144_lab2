@@ -155,17 +155,16 @@ void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dst, uint8_t icmp_type
 	ip_hdr->ip_off = 0;
 	ip_hdr->ip_ttl = 64; 
 	ip_hdr->ip_p = ip_protocol_icmp;
-	/*ip_hdr->ip_src = ip_src;*/
 	ip_hdr->ip_dst = ip_dst;
-	ip_hdr->ip_sum = 0;
-	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 	/* Lookup ip_dst in routing table */
 	struct sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
 	if (rtIter)
 	{
-		/* Assign IP header's ip_src */
+		/* Fill out rest of IP header */
 		ip_hdr->ip_src = sr_get_interface(sr, rtIter->interface)->ip;
+		ip_hdr->ip_sum = 0;
+		ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 		/* Lookup gateway IP in ARP table */
 		uint32_t gwIP = rtIter->gw.s_addr;
