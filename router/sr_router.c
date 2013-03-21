@@ -412,7 +412,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Routing entry not found -> ICMP network unreachable */
 		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
-		send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, , iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
+		send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
 	
