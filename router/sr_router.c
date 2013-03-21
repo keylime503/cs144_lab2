@@ -92,13 +92,13 @@ void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)
 	ip_hdr->ip_sum = cksum((void *) ip_hdr, sizeof(sr_ip_hdr_t));
 
 	/* Lookup ip_dst in routing table */
-	strut sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
+	struct sr_rt * rtIter = lookupRoutingTbl(sr, ip_hdr->ip_dst);
 	if (rtIter)
 	{
 		/* Lookup gateway IP in ARP table */
 		uint32_t gwIP = rtIter->gw.s_addr;
 
-		struct sr_arpentry * entry = sr_arpcache_lookup(sr->cache, gwIP);
+		struct sr_arpentry * entry = sr_arpcache_lookup( &(sr->cache), gwIP);
 		if (entry)
 		{
 			/* Send to Layer 2 */
@@ -108,7 +108,7 @@ void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)
 		}
  		else
        	{
-       		memcpy(eth_hdr->ar_sha, sr_get_interface(sr, interface)->addr, ETHER_ADDR_LEN);
+       		memcpy(eth_hdr->ether_shost, sr_get_interface(sr, rtIter->interface)->addr, ETHER_ADDR_LEN);
        		struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gwIP, packet, len, rtIter->interface);
        		handle_arpreq(sr, req);
 			return;
@@ -367,7 +367,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				{
 					/* Reply ICMP destination port unreachable */
 					printf("Sending ICMP3 Destination Port Unreachable\n");
-					send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
+					send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, iphdr->ip_src, 3,3, (uint8_t *)iphdr);
 				}
 				return;
 			}
@@ -412,7 +412,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 		/* Routing entry not found -> ICMP network unreachable */
 		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
-		send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
+		send_icmp_packet(sr, interface, eth_hdr->ether_shost, iphdr->ip_src, , iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
 	}
 	
@@ -442,7 +442,7 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
     			if(if_walker->ip == targetIP)
     			{
     				/* Send ARP reply */
-    				send_arp_packet(sr, if_walker->name, arphdr->ar_sha,arphdr->ar_sip, arp_op_reply);
+    				send_arp_packet(sr, if_walker->name, arphdr->ar_sha, arphdr->ar_sip, arphdr->ar_sip, arp_op_reply);
     				return;
     			}
 
