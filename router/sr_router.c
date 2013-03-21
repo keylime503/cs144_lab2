@@ -168,7 +168,7 @@ void send_icmp_packet(struct sr_instance* sr, char* interface/* lent */, void * 
 }
 
 /* Method to send ARP packet (fills ARP header, sends to send_later_2) to an interface. */
-void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, uint32_t ip_src, unsigned short ar_op)
+void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, unsigned short ar_op)
 {	
 	/* Create packet to hold ethernet header and arp header */
 	unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -185,7 +185,7 @@ void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * e
 	arp_hdr->ar_hln = ETHER_ADDR_LEN;
 	arp_hdr->ar_pln = 4;
 	arp_hdr->ar_op = htons(ar_op);
-	arp_hdr->ar_sip = ip_src;
+	arp_hdr->ar_sip = outgoingIFace->ip;
 	arp_hdr->ar_tip = ip_dst;
 	memcpy(arp_hdr->ar_sha, outgoingIFace->addr, ETHER_ADDR_LEN);
 	memcpy(arp_hdr->ar_tha, ether_dest, ETHER_ADDR_LEN);
