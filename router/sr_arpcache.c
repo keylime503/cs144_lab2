@@ -16,7 +16,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
     time_t now = time(NULL);
     if (difftime(now, req->sent) > 1.0)
     {
-        if (req->times_sent >= 5)
+        if (req->times_sent >= 2)
         {
             struct sr_packet * packet_ptr = req->packets;
             while (packet_ptr != NULL)
@@ -24,6 +24,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
 
                 sr_ethernet_hdr_t * ethernet_hdr = (sr_ethernet_hdr_t *) packet_ptr->buf;
                 sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *)(packet_ptr->buf + sizeof(sr_ethernet_hdr_t));
+                printf("Sending ICMP 3, 1\n");
                 send_icmp_packet(sr, ip_hdr->ip_src, 3, 1, (uint8_t *)ip_hdr);
                 packet_ptr = packet_ptr->next;
             }
