@@ -67,8 +67,7 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	{
 		maskLength++;
 	}
-	printf("maskLength: %d\n", maskLength);
-
+	
 	int count = 0;
 	int i;
 	for(i = 0; i < maskLength; i++)
