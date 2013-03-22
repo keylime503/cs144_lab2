@@ -54,8 +54,8 @@ void sr_init(struct sr_instance* sr)
 int bitAt(int pos, uint32_t num)
 {
 	uint32_t mask = 1;
-	mask << 31-pos;
-	return (num & mask) > 0
+	mask << (31-pos);
+	return (num & mask) > 0;
 }
 
 int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
@@ -63,15 +63,18 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	/* Figure out how long mask is */
 	int maskLength = 0;
 	uint32_t mask = rtEntry->mask.s_addr;
-	while(bitAt(maskIter, mask) == 1)
+	while(bitAt(maskLength, mask) == 1)
 	{
 		maskLength++;
 	}
 
 	int count = 0;
-	for(int i = 0; i < maskLength; i++)
+	int i;
+	for(i = 0; i < maskLength; i++)
+	{
 		if (bitAt(i, ip) != bitAt(i, rtEntry->dest.s_addr)) 
 			break;
+	}
 	return count;
 }
 
@@ -84,7 +87,7 @@ struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable)
 	struct sr_rt * iter;
 	for(iter = rTable; iter != NULL; iter = iter->next)
 	{
-		int matchLength = matchprefixlength(ip, iter)
+		int matchLength = matchprefixlength(ip, iter);
 		if(matchLength > max)
 		{
 			max = matchLength;
