@@ -60,6 +60,9 @@ struct sr_instance
 int sr_verify_routing_table(struct sr_instance* sr);
 
 /* -- sr_vns_comm.c -- */
+int bitAt(int pos, uint32_t num);
+int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry);
+struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable);
 int sr_send_packet(struct sr_instance* , uint8_t* , unsigned int , const char*);
 int sr_connect_to_server(struct sr_instance* ,unsigned short , char* );
 int sr_read_from_server(struct sr_instance* );

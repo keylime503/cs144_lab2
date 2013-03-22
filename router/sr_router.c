@@ -51,6 +51,49 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+int bitAt(int pos, uint32_t num)
+{
+	uint32_t mask = 1;
+	mask << 31-pos;
+	return (num & mask) > 0
+}
+
+int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
+{
+	/* Figure out how long mask is */
+	int maskLength = 0;
+	uint32_t mask = rtEntry->mask.s_addr;
+	while(bitAt(maskIter, mask) == 1)
+	{
+		maskLength++;
+	}
+
+	int count = 0;
+	for(int i = 0; i < maskLength; i++)
+		if (bitAt(i, ip) != bitAt(i, rtEntry->dest.s_addr)) 
+			break;
+	return count;
+}
+
+/* Returns the struct sr_rt * for the longest prefix. Returns 
+   NULL if no match found */
+struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable)
+{
+	int max = 0;
+	struct sr_rt * maxEntry = NULL;
+	struct sr_rt * iter;
+	for(iter = rTable; iter != NULL; iter = iter->next)
+	{
+		int matchLength = matchprefixlength(ip, iter)
+		if(matchLength > max)
+		{
+			max = matchLength;
+			maxEntry = iter;
+		}
+	}
+	return maxEntry;
+}
+
 struct sr_rt * lookupRoutingTbl(struct sr_instance* sr, uint32_t ip_dest)
 {
 	struct sr_rt * rtIter = sr->routing_table;
@@ -402,41 +445,34 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 
 		/* Destined to others */
 		/* Lookup Routing Table */
-		struct sr_rt * rtIter = sr->routing_table;
-		while(rtIter)
+		struct sr_rt * rtEntry = lookupRoutingTbl(sr, iphdr->ip_dst);
+		if(rtEntry != NULL)
 		{
-			/* TODO: Fix longest prefix match */
-			if(rtIter->dest.s_addr == iphdr->ip_dst)
+			/* Get gateway IP (next hop) */
+			uint32_t gateIP = rtEntry->gw.s_addr;
+
+			/* Get dest MAC Address from ARP Cache */
+			struct sr_arpentry * entry = sr_arpcache_lookup(&(sr->cache), gateIP);
+			
+			/* Get source MAC Address from outgoing interface */
+			struct sr_if * outgoingIFace = sr_get_interface(sr, rtEntry->interface);
+
+			if(entry)
 			{
-				/* Get gateway IP (next hop) */
-				uint32_t gateIP = rtIter->gw.s_addr;
-
-				/* Get dest MAC Address from ARP Cache */
-				struct sr_arpentry * entry = sr_arpcache_lookup(&(sr->cache), gateIP);
-				
-				/* Get source MAC Address from outgoing interface */
-				struct sr_if * outgoingIFace = sr_get_interface(sr, rtIter->interface);
-
-				/* ARP Cache Hit */
-				if(entry)
-				{
-					/* Send to Layer 2 */
-					send_layer_2(sr, packet, len, outgoingIFace->name, entry->mac, ethertype_ip);
-					free(entry);
-					return;
-				}
-
+				/* ARP Cache Hit, Send to Layer 2 */
+				send_layer_2(sr, packet, len, outgoingIFace->name, entry->mac, ethertype_ip);
+				free(entry);
+			}
+			else
+			{
 				/* ARP Cache Miss */
 				struct sr_arpreq * req = sr_arpcache_queuereq( &(sr->cache), gateIP, packet, len, outgoingIFace->name);
-       			handle_arpreq(sr, req);
-				return;
+				handle_arpreq(sr, req);
 			}
-			rtIter = rtIter->next;
+			return;
 		}
 
-
 		/* Routing entry not found -> ICMP network unreachable */
-		/*printf("Routing entry not found\n");*/
 		printf("Sending ICMP3 Network Unreachable\n");
 		send_icmp_packet(sr, iphdr->ip_src, 3, 0, (uint8_t *)iphdr);
 		return;
