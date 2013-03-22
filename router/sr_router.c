@@ -80,12 +80,12 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 
 /* Returns the struct sr_rt * for the longest prefix. Returns 
    NULL if no match found */
-struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable)
+struct sr_rt * lookupRoutingTbl(struct sr_instance* sr, uint32_t ip)
 {
 	int max = 0;
 	struct sr_rt * maxEntry = NULL;
 	struct sr_rt * iter;
-	for(iter = rTable; iter != NULL; iter = iter->next)
+	for(iter = sr->routing_table; iter != NULL; iter = iter->next)
 	{
 		int matchLength = matchprefixlength(ip, iter);
 		if(matchLength > max)
@@ -96,22 +96,6 @@ struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable)
 	}
 	return maxEntry;
 }
-
-struct sr_rt * lookupRoutingTbl(struct sr_instance* sr, uint32_t ip_dest)
-{
-	struct sr_rt * rtIter = sr->routing_table;
-	while(rtIter)
-	{
-		/* TODO: Fix longest prefix match */
-		if(rtIter->dest.s_addr == ip_dest)
-		{
-			return rtIter;
-		}
-		rtIter = rtIter->next;
-	}
-	return NULL;
-}
-
 
 /* Send echo reply ICMP message (for ping) */
 void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len)

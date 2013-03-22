@@ -60,15 +60,15 @@ struct sr_instance
 int sr_verify_routing_table(struct sr_instance* sr);
 
 /* -- sr_vns_comm.c -- */
-int bitAt(int pos, uint32_t num);
-int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry);
-struct sr_rt * longestPrefixMatch(uint32_t ip, struct sr_rt * rTable);
 int sr_send_packet(struct sr_instance* , uint8_t* , unsigned int , const char*);
 int sr_connect_to_server(struct sr_instance* ,unsigned short , char* );
 int sr_read_from_server(struct sr_instance* );
 
 /* -- sr_router.c -- */
 void sr_init(struct sr_instance* );
+int bitAt(int pos, uint32_t num);
+int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry);
+struct sr_rt * lookupRoutingTbl(struct sr_instance* sr, uint32_t ip);
 void send_echo_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len);
 void send_icmp_packet(struct sr_instance* sr, uint32_t ip_dest, uint8_t icmp_type, uint8_t icmp_code, uint8_t * type_3_data);
 void send_arp_packet(struct sr_instance* sr, char* interface/* lent */, void * ether_dest, uint32_t ip_dst, unsigned short ar_op);
