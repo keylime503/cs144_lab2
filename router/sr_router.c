@@ -54,7 +54,7 @@ void sr_init(struct sr_instance* sr)
 int bitAt(int pos, uint32_t num)
 {
 	uint32_t mask = 1;
-	mask << (31-pos);
+	mask = mask << (31-pos);
 	return (num & mask) > 0;
 }
 
@@ -63,7 +63,7 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	/* Figure out how long mask is */
 	int maskLength = 0;
 	uint32_t mask = rtEntry->mask.s_addr;
-	while((maskLength < 32) && (bitAt(maskLength, mask) == 1)
+	while((maskLength < 32) && (bitAt(maskLength, mask) == 1))
 	{
 		maskLength++;
 	}
