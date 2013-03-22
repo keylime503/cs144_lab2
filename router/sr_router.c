@@ -379,8 +379,6 @@ void sr_handlepacket(struct sr_instance* sr, uint8_t * packet/* lent */, unsigne
 				/* ICMP Protocol */
 				if (ip_protocol((uint8_t *) iphdr) == ip_protocol_icmp)
 				{
-					/* TODO: for now, we only handle echo request -> echo reply */
-
 					/* Check that the packet is long enough for an IP header */
 					minlength += sizeof(sr_icmp_hdr_t);
 					if (len < minlength) 
