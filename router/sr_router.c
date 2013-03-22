@@ -73,10 +73,9 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	for(i = 0; i < maskLength; i++)
 	{
 		if (bitAt(i, ip) != bitAt(i, rtEntry->dest.s_addr)) 
-			break;
-		count++;
+			return 0;
 	}
-	return count;
+	return maskLength;
 }
 
 /* Returns the struct sr_rt * for the longest prefix. Returns 
