@@ -63,7 +63,7 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	/* Figure out how long mask is */
 	int maskLength = 0;
 	uint32_t mask = rtEntry->mask.s_addr;
-	while(bitAt(maskLength, mask) == 1)
+	while((maskLength < 32) && (bitAt(maskLength, mask) == 1)
 	{
 		maskLength++;
 	}
