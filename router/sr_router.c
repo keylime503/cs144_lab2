@@ -74,6 +74,7 @@ int matchprefixlength(uint32_t ip, struct sr_rt * rtEntry)
 	{
 		if (bitAt(i, ip) != bitAt(i, rtEntry->dest.s_addr)) 
 			break;
+		count++;
 	}
 	return count;
 }
