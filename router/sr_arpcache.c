@@ -16,7 +16,7 @@ void handle_arpreq(struct sr_instance* sr, struct sr_arpreq * req)
     time_t now = time(NULL);
     if (difftime(now, req->sent) > 1.0)
     {
-        if (req->times_sent >= 5)
+        if (req->times_sent >= 2)
         {
             struct sr_packet * packet_ptr = req->packets;
             while (packet_ptr != NULL)
